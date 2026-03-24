@@ -54,6 +54,7 @@ export async function POST(req: Request) {
               original_content: original_content.trim(),
               reason: reason.trim(),
               original_chunk_id: null,
+              status: 'approved',
             })
             .select('id')
             .single();
