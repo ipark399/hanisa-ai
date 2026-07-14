@@ -47,3 +47,10 @@ venv/
 coverage/
 .nyc_output/
 .vercel
+
+# Playwright
+test-results/
+playwright-report/
+
+# Supabase CLI temp
+supabase/.temp/
