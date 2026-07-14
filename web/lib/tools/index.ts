@@ -15,6 +15,7 @@ import {
 import { get_company_profile, get_seasonality, get_top_counterparties } from './company';
 import { check_monday_brief, check_fx_opportunity, check_flexicash_opportunity } from './triggers';
 import { record_user_action, record_learning_event } from './actions';
+import { get_bloomberg_market_context } from './bloomberg';
 
 type ToolHandler = (args: any) => Promise<unknown>;
 
@@ -40,7 +41,8 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   get_product_details,
   get_product_pricing,
   record_user_action,
-  record_learning_event
+  record_learning_event,
+  get_bloomberg_market_context
 };
 
 export async function dispatchTool(name: string, args: unknown): Promise<unknown> {

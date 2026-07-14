@@ -1,19 +1,29 @@
-// 8-step demo storyboard.
-// Reference: goals/demo-storyboard-v2.md
+// 8-step demo storyboard split into 2 Acts.
+// Reference: goals/demo-storyboard-v2.md + REQ-CIMB-02 (ws-152) area 1.
 //
-// Each step accumulates messages onto the chat. step=0 is empty. step=1 adds the
-// Monday brief, step=2 adds the FX trigger on top, etc.
+// Acts:
+//   intro (Step 0)         — Pre-demo setup. Shared.
+//   act1  (Step 1–4)       — FX Hero: Monday Brief → FX Trigger → Hedge Pull → Lock FX Forward
+//   act2  (Step 5–8)       — FlexiCash + Learning: 3-week jump → Trigger → Loan Pull → Apply → Learning
+//
+// Message accumulation policy (REQ-CIMB-02 #2 dependant):
+//   - Act 1 in progress  → Act 1 step messages up to current stepWithinAct
+//   - Act 2 in progress  → Act 1 ALL messages + Act 2 step messages up to current stepWithinAct
+//   - "Reset All" clears everything; "Reset Act" only rewinds the current Act
+//   - Free mode does not consume storyboard messages
 
 export type BubbleSide = 'self' | 'other' | 'system';
+export type ActId = 'intro' | 'act1' | 'act2';
+export type ActiveMode = ActId | 'free';
 
 export interface DemoMessage {
   id: string;
   side: BubbleSide;
   text: string;
-  time: string;          // displayed time stamp (e.g., "09:00")
-  intel?: boolean;       // show "From CIMB CFO Agent · INTEL" header
-  actions?: { label: string; actionId: string; variant?: 'primary' | 'danger' }[];
-  step: number;          // which step introduced this message
+  time: string;
+  intel?: boolean;
+  actions?: { label: string; actionId: string; variant?: 'primary' | 'secondary' | 'danger' }[];
+  step: number;
 }
 
 export interface ContextSection {
@@ -23,18 +33,45 @@ export interface ContextSection {
   pre?: string;
 }
 
+// Tool & DB Trace (REQ-CIMB-02 area 2 — Sankey visualization).
+// Each step describes the LLM's "Read → Reason → Write" sequence so the
+// SankeyTrace component can render it as a left-to-right flow.
+export interface ToolTraceEntry {
+  phase: 'read' | 'reason' | 'write';
+  table?: string;           // for read/write phases — bank_/infer_ prefix
+  rowsRead?: number;        // for read phase
+  rowsWritten?: number;     // for write phase
+  reasoning?: string;       // for reason phase — short description
+  toolCall?: string;        // optional — tool function signature for context
+  rowPreview?: Record<string, unknown>[]; // top-3 sample rows for Row Preview toggle (PRD §7 D6.5 정합)
+}
+
 export interface DemoStep {
   step: number;
-  timeStamp: string;     // displayed in header
-  narrative: string;     // presenter narration / context
+  act: ActId;
+  stepWithinAct: number;
+  timeStamp: string;
+  // asOfIso (ws-160): UTC ISO timestamp the chat backend should treat as "now"
+  // when this step is active. Threads into tools via AsyncLocalStorage so that
+  // get_cashflow_projection, check_flexicash_opportunity, etc. see the right
+  // snapshot for Act 2 (Fri 31 Jul) instead of always reading Act 1 (Mon 13 Jul)
+  // data. KL is UTC+8 — Mon 13 Jul 09:00 KL = 2026-07-13T01:00:00Z.
+  asOfIso: string;
+  narrative: string;
   newMessages: DemoMessage[];
   context: ContextSection[];
+  toolTrace?: ToolTraceEntry[]; // Sankey input — undefined/empty = no trace this step
 }
+
+export const MAX_STEP_WITHIN_ACT = 4;
 
 export const STEPS: DemoStep[] = [
   {
     step: 0,
-    timeStamp: 'Sun 7 Jun · 22:00',
+    act: 'intro',
+    stepWithinAct: 0,
+    timeStamp: 'Sun 12 Jul · 22:00',
+    asOfIso: '2026-07-13T01:00:00Z',
     narrative: 'Pre-demo setup. Ahmad about to start his Monday morning.',
     newMessages: [],
     context: [
@@ -52,7 +89,10 @@ export const STEPS: DemoStep[] = [
   },
   {
     step: 1,
-    timeStamp: 'Mon 8 Jun · 09:00',
+    act: 'act1',
+    stepWithinAct: 1,
+    timeStamp: 'Mon 13 Jul · 09:00',
+    asOfIso: '2026-07-13T01:00:00Z',
     narrative: 'Monday morning brief fires automatically.',
     newMessages: [
       {
@@ -91,11 +131,22 @@ This week's snapshot: net inflow MYR 42K, outflow MYR 38K. One invoice (Café Lu
           { k: 'Overdue inflow', v: '0.91' }
         ]
       }
+    ],
+    toolTrace: [
+      { phase: 'read', table: 'bank_interactions', rowsRead: 1, toolCall: 'check_monday_brief()', rowPreview: [{ last_brief_at: '2026-07-06', customer_id: 'ahmad_01' }] },
+      { phase: 'read', table: 'infer_cashflow_projection', rowsRead: 1, toolCall: 'get_cashflow_projection(horizon_days=7)', rowPreview: [{ inflow_myr: 42000, outflow_myr: 38000, horizon_days: 7 }] },
+      { phase: 'read', table: 'infer_expected_inflows', rowsRead: 1, toolCall: 'get_expected_inflows(days_ahead=14)', rowPreview: [{ counterparty: 'Cafe Lumiere', amount_myr: 8500, days_overdue: 4 }] },
+      { phase: 'read', table: 'bank_fx_rates', rowsRead: 3, toolCall: 'get_fx_rate_history(pair=EUR/MYR, days=3)', rowPreview: [{ pair: 'EUR/MYR', delta_pct: 1.3, period: '3d' }] },
+      { phase: 'reason', reasoning: 'Weekly brief composer — combine net flow + overdue + FX summary into a single intel message.' },
+      { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'brief sent (direction=agent_to_user, type=brief_intel)' }
     ]
   },
   {
     step: 2,
-    timeStamp: 'Mon 8 Jun · 10:30',
+    act: 'act1',
+    stepWithinAct: 2,
+    timeStamp: 'Mon 13 Jul · 10:30',
+    asOfIso: '2026-07-13T02:30:00Z',
     narrative: 'FX trigger fires. EUR payment forecasted, rate is favourable.',
     newMessages: [
       {
@@ -104,7 +155,11 @@ This week's snapshot: net inflow MYR 42K, outflow MYR 38K. One invoice (Café Lu
         intel: true,
         time: '10:30',
         text:
-`Based on your monthly pattern, an EUR payment of about MYR 38K looks due in the next 9 days. EUR/MYR is currently 2.8% better than your 90-day average. Lock the rate now?`,
+`Based on your monthly pattern, an EUR payment of about MYR 38K looks due in the next 9 days. EUR/MYR is currently 2.8% better than your 90-day average.
+
+Market context: EUR softened after ECB dovish remarks (Bloomberg). Current rate sits in the top 15% of the 90-day range.
+
+Lock the rate now?`,
         actions: [
           { label: 'Lock now', actionId: 'lock_fx_forward', variant: 'primary' },
           { label: 'Not now', actionId: 'decline_fx', variant: 'danger' }
@@ -125,7 +180,7 @@ This week's snapshot: net inflow MYR 42K, outflow MYR 38K. One invoice (Café Lu
         label: 'Forecast (from infer_forecasted_payments)',
         rows: [
           { k: 'Counterparty', v: 'Domaine Lafont (FR, wine)' },
-          { k: 'Expected date', v: '2026-06-17 (D+9)' },
+          { k: 'Expected date', v: '2026-07-22 (D+9)' },
           { k: 'Amount mean', v: 'EUR 8,200' },
           { k: 'Method', v: 'recurring_pattern' },
           { k: 'Confidence', v: '0.89' }
@@ -144,11 +199,22 @@ This week's snapshot: net inflow MYR 42K, outflow MYR 38K. One invoice (Café Lu
         label: 'Computation',
         pre: 'saving ≈ 8200 × (4.9528 - 4.8194) = MYR 1,094\n(less forward spread ≈ MYR 79)\nnet saving ≈ MYR 1,015'
       }
+    ],
+    toolTrace: [
+      { phase: 'read', table: 'infer_forecasted_payments', rowsRead: 1, toolCall: 'get_forecasted_payments(currency=EUR, days_ahead=30)', rowPreview: [{ counterparty: 'Domaine Lafont', amount_eur: 8200, due_date: '2026-07-22', confidence: 0.89 }] },
+      { phase: 'read', table: 'bank_fx_rates', rowsRead: 90, toolCall: 'get_fx_rate_history(pair=EUR/MYR, days=90)', rowPreview: [{ pair: 'EUR/MYR', mid: 4.9528, ninety_day_avg: 4.8194, delta_pct: 2.8 }] },
+      { phase: 'read', table: 'bank_product_pricing_daily', rowsRead: 1, toolCall: 'get_product_pricing(product=fx_forward_v1, days=30)', rowPreview: [{ product_id: 'fx_forward_v1', forward_bps: 25, tenor_days: 30 }] },
+      { phase: 'read', table: 'bloomberg_market_snapshots', rowsRead: 1, toolCall: "get_bloomberg_market_context(fx_pair='EUR/MYR')", rowPreview: [{ headline: 'EUR softens after ECB dovish remarks', percentile_90d: 85, range_position: 'top 15%' }] },
+      { phase: 'reason', reasoning: 'check_fx_opportunity → TRUE: rate +2.8% vs 90d avg AND payment within 9 days; Bloomberg: ECB dovish, top 15% of 90d range. Net saving ≈ MYR 1,015.' },
+      { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'trigger event (type=fx_trigger_eval, result=fired)' }
     ]
   },
   {
     step: 3,
-    timeStamp: 'Mon 8 Jun · 10:31',
+    act: 'act1',
+    stepWithinAct: 3,
+    timeStamp: 'Mon 13 Jul · 10:31',
+    asOfIso: '2026-07-13T02:31:00Z',
     narrative: 'Mr. Bakri asks for hedging product comparison.',
     newMessages: [
       {
@@ -195,7 +261,7 @@ _Informational. Subject to product terms and approval._`,
         ]
       },
       {
-        label: 'Per-product pricing (2026-06-08)',
+        label: 'Per-product pricing (2026-07-13)',
         rows: [
           { k: 'FX Forward 30d', v: '25 bps' },
           { k: 'FX Forward 7d', v: '18 bps' },
@@ -203,12 +269,21 @@ _Informational. Subject to product terms and approval._`,
           { k: 'EUR FCD 90d', v: '0.5% p.a.' }
         ]
       }
+    ],
+    toolTrace: [
+      { phase: 'read', table: 'bank_product_catalog', rowsRead: 3, toolCall: "find_products_by_use_case(tag='fx_hedging', complexity_level=4)", rowPreview: [{ product_id: 'fx_forward_v1', name: 'FX Forward', use_case_tags: ['fx_hedging'] }, { product_id: 'fx_limit_order', name: 'FX Limit Order', use_case_tags: ['fx_hedging'] }, { product_id: 'eur_currency_account', name: 'EUR Currency Account', use_case_tags: ['fx_hedging'] }] },
+      { phase: 'read', table: 'bank_product_pricing_daily', rowsRead: 3, toolCall: 'get_product_pricing_today(product_ids=[fx_forward_v1, fx_limit_order, eur_currency_account])', rowPreview: [{ product_id: 'fx_forward_v1', forward_bps: 25 }, { product_id: 'fx_limit_order', upfront_bps: 0 }, { product_id: 'eur_currency_account', interest_pa_pct: 0.5 }] },
+      { phase: 'reason', reasoning: 'L4 filter excludes fx_hedging_program (L5 only). Recommendation composer ranks Forward best for Ahmad pattern.' },
+      { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'recommendation reply (type=product_recommendation)' }
     ]
   },
   {
     step: 4,
-    timeStamp: 'Mon 8 Jun · 10:33',
-    narrative: 'Mr. Bakri taps "Lock now" → FX Forward booked.',
+    act: 'act1',
+    stepWithinAct: 4,
+    timeStamp: 'Mon 13 Jul · 10:33',
+    asOfIso: '2026-07-13T02:33:00Z',
+    narrative: 'Mr. Bakri taps "Lock now" → FX Forward request submitted for RM review.',
     newMessages: [
       {
         id: 'msg_005',
@@ -222,11 +297,9 @@ _Informational. Subject to product terms and approval._`,
         side: 'other',
         time: '10:33',
         text:
-`Locked at **4.95 EUR/MYR** for value date **17 June 2026**, amount **EUR 8,200**. Trade reference: **FXFW-2026-7142**.
+`Request received. Reference: **REQ-FXFW-2026-7142**. Your RM will contact you within 24 hours to finalize.
 
-Estimated saving vs your 90-day average: **MYR 1,064**.
-
-Confirmation sent to ahmad@sunrisetrading.my.`,
+Estimated saving **MYR 1,064** vs spot.`,
         step: 4
       }
     ],
@@ -235,26 +308,35 @@ Confirmation sent to ahmad@sunrisetrading.my.`,
         label: 'Action',
         rows: [
           { k: 'Type', v: 'lock_fx_forward' },
-          { k: 'Trade ref', v: 'FXFW-2026-7142' },
+          { k: 'Reference', v: 'REQ-FXFW-2026-7142' },
           { k: 'Locked rate', v: '4.95' },
           { k: 'Amount EUR', v: '8,200' },
-          { k: 'Value date', v: '2026-06-17' }
+          { k: 'Value date', v: '2026-07-22' },
+          { k: 'Status', v: 'pending_rm_review' }
         ]
       },
       {
         label: 'DB writes',
         lines: [
-          'bank_interactions: user_action="locked"',
-          'bank_scheduled_payments: NEW row (EUR 8,200 on 2026-06-17)',
-          'bank_products_held: fx_forward enrolled',
-          'infer_forecasted_payments: status → actualized'
+          'bank_interactions: user_action="lock_fx_forward"',
+          'bank_scheduled_payments: NEW row (EUR 8,200 on 2026-07-22, status=pending_rm_review)'
         ]
       }
+    ],
+    toolTrace: [
+      { phase: 'read', table: 'infer_forecasted_payments', rowsRead: 1, toolCall: 'get_forecast(id=fp_eur_001)', rowPreview: [{ counterparty: 'Domaine Lafont', amount_eur: 8200, due_date: '2026-07-22' }] },
+      { phase: 'read', table: 'bank_fx_rates', rowsRead: 1, toolCall: 'get_fx_rate_now(pair=EUR/MYR)', rowPreview: [{ pair: 'EUR/MYR', mid: 4.9528, lock_rate: 4.95 }] },
+      { phase: 'reason', reasoning: 'lock_fx_forward action — submit FX Forward request at 4.95 EUR/MYR for 2026-07-22, EUR 8,200; ref REQ-FXFW-2026-7142. Pending RM review.' },
+      { phase: 'write', table: 'bank_scheduled_payments', rowsWritten: 1, reasoning: 'NEW row (EUR 8,200, value_date 2026-07-22, status=pending_rm_review)', rowPreview: [{ id: 'sp_eur_001', amount_eur: 8200, value_date: '2026-07-22', rate: 4.95, status: 'pending_rm_review' }] },
+      { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'action confirm (type=lock_fx_forward, status=pending_rm_review)' }
     ]
   },
   {
     step: 5,
-    timeStamp: 'Fri 26 Jun · 15:00',
+    act: 'act2',
+    stepWithinAct: 1,
+    timeStamp: 'Fri 31 Jul · 15:00',
+    asOfIso: '2026-07-31T07:00:00Z',
     narrative: 'Time-jump 3 weeks. FlexiCash trigger fires — cash dip predicted.',
     newMessages: [
       {
@@ -291,8 +373,8 @@ Confirmation sent to ahmad@sunrisetrading.my.`,
       {
         label: 'Cashflow projection',
         rows: [
-          { k: 'Projection date', v: '2026-06-26' },
-          { k: 'Horizon date', v: '2026-07-17' },
+          { k: 'Projection date', v: '2026-07-31' },
+          { k: 'Horizon date', v: '2026-08-21' },
           { k: 'Projected mean', v: 'MYR 3,200' },
           { k: 'p25 / p75', v: '1,800 / 5,000' },
           { k: 'Confidence', v: '0.81' }
@@ -314,14 +396,24 @@ Confirmation sent to ahmad@sunrisetrading.my.`,
           { k: 'Offer ID', v: 'offer_flx_001' },
           { k: 'Amount', v: 'MYR 65,000' },
           { k: 'Rate', v: '8.5% p.a.' },
-          { k: 'Valid until', v: '2026-08-31' }
+          { k: 'Valid until', v: '2026-10-05' }
         ]
       }
+    ],
+    toolTrace: [
+      { phase: 'read', table: 'infer_cashflow_projection', rowsRead: 1, toolCall: 'get_cashflow_projection(horizon_days=21)', rowPreview: [{ horizon_date: '2026-08-21', projected_mean_myr: 3200, p25: 1800, p75: 5000, confidence: 0.81 }] },
+      { phase: 'read', table: 'bank_preapproved_offers', rowsRead: 1, toolCall: "get_preapproved_offers(customer_id='ahmad_01', active_only=true)", rowPreview: [{ offer_id: 'offer_flx_001', amount_myr: 65000, rate_pa: 8.5, valid_until: '2026-10-05' }] },
+      { phase: 'read', table: 'bank_credit_limits', rowsRead: 1, toolCall: 'get_credit_limits(customer_id=ahmad_01)', rowPreview: [{ product: 'working_capital', limit: 100000, used: 60000, unused: 40000 }] },
+      { phase: 'reason', reasoning: 'check_flexicash_opportunity → TRUE: 21-day projection dips below MYR 5K AND active pre-approved FlexiCash offer.' },
+      { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'trigger event (type=flexicash_trigger_eval, result=fired)' }
     ]
   },
   {
     step: 6,
-    timeStamp: 'Fri 26 Jun · 15:01',
+    act: 'act2',
+    stepWithinAct: 2,
+    timeStamp: 'Fri 31 Jul · 15:01',
+    asOfIso: '2026-07-31T07:01:00Z',
     narrative: 'Mr. Bakri asks for cheapest loan comparison.',
     newMessages: [
       {
@@ -373,12 +465,22 @@ _Informational. Subject to product terms and approval._`,
           'system prompt rule: existing unused 한도 우선'
         ]
       }
+    ],
+    toolTrace: [
+      { phase: 'read', table: 'bank_product_catalog', rowsRead: 3, toolCall: "find_products_by_use_case(tag='short_term_shortfall', complexity_level=4)", rowPreview: [{ product_id: 'working_capital_facility', name: 'Working Capital Facility' }, { product_id: 'flexicash', name: 'FlexiCash' }, { product_id: 'trade_bridging_loan', name: 'Trade Bridging Loan' }] },
+      { phase: 'read', table: 'bank_credit_limits', rowsRead: 1, toolCall: 'get_credit_limits(customer_id=ahmad_01, product=working_capital)', rowPreview: [{ product: 'working_capital', limit: 100000, used: 60000, unused: 40000 }] },
+      { phase: 'read', table: 'bank_product_pricing_daily', rowsRead: 3, toolCall: 'get_product_pricing_today(product_ids=[working_capital_facility, flexicash, trade_bridging_loan])', rowPreview: [{ product_id: 'working_capital_facility', rate_pa: 7.2 }, { product_id: 'flexicash', rate_pa: 8.5 }, { product_id: 'trade_bridging_loan', rate_pa: 6.8 }] },
+      { phase: 'reason', reasoning: 'Rank by cost: combine WC unused 40K @ 7.2% + FlexiCash 25K @ 8.5% = MYR 320 interest (3w) vs FlexiCash 65K alone = MYR 460.' },
+      { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'loan recommendation reply' }
     ]
   },
   {
     step: 7,
-    timeStamp: 'Fri 26 Jun · 15:03',
-    narrative: 'Mr. Bakri taps Apply → FlexiCash activated.',
+    act: 'act2',
+    stepWithinAct: 3,
+    timeStamp: 'Fri 31 Jul · 15:03',
+    asOfIso: '2026-07-31T07:03:00Z',
+    narrative: 'Mr. Bakri taps Apply → FlexiCash request submitted for RM review.',
     newMessages: [
       {
         id: 'msg_011',
@@ -392,11 +494,9 @@ _Informational. Subject to product terms and approval._`,
         side: 'other',
         time: '15:03',
         text:
-`FlexiCash **MYR 65,000** line activated. **8.5% p.a.** drawdowns on demand. Available immediately. Reference: **FLX-2026-2284**.
+`Request received. Reference: **REQ-FLX-2026-2284**. Your RM will contact you within 24 hours to finalize.
 
-You can draw any amount up to MYR 65K through OCTO Biz app or by replying here.
-
-Confirmation sent to ahmad@sunrisetrading.my.`,
+**MYR 65,000** credit line at **8.5% p.a.** once activated.`,
         step: 7
       }
     ],
@@ -405,25 +505,36 @@ Confirmation sent to ahmad@sunrisetrading.my.`,
         label: 'Action',
         rows: [
           { k: 'Type', v: 'accept_preapproved_offer' },
-          { k: 'Reference', v: 'FLX-2026-2284' },
+          { k: 'Reference', v: 'REQ-FLX-2026-2284' },
           { k: 'Limit', v: 'MYR 65,000' },
-          { k: 'Rate', v: '8.5% p.a.' }
+          { k: 'Rate', v: '8.5% p.a.' },
+          { k: 'Status', v: 'pending_rm_review' }
         ]
       },
       {
         label: 'DB writes',
         lines: [
           'bank_preapproved_offers: status → accepted',
-          'bank_products_held: flexicash NEW row',
-          'bank_credit_limits: flexicash 65K NEW',
-          'infer_cashflow_projection: dip_below_threshold → FALSE (recompute)'
+          'bank_products_held: flexicash NEW row (status=pending_rm_review)',
+          'bank_credit_limits: flexicash 65K NEW (status=pending_rm_review)'
         ]
       }
+    ],
+    toolTrace: [
+      { phase: 'read', table: 'bank_preapproved_offers', rowsRead: 1, toolCall: "get_preapproved_offer(id='offer_flx_001')", rowPreview: [{ offer_id: 'offer_flx_001', amount_myr: 65000, rate_pa: 8.5 }] },
+      { phase: 'reason', reasoning: 'accept_preapproved_offer action — submit FlexiCash request MYR 65K @ 8.5% p.a.; ref REQ-FLX-2026-2284. Pending RM review.' },
+      { phase: 'write', table: 'bank_preapproved_offers', rowsWritten: 1, reasoning: 'status → accepted' },
+      { phase: 'write', table: 'bank_products_held', rowsWritten: 1, reasoning: 'flexicash enrolled (status=pending_rm_review)', rowPreview: [{ product: 'flexicash', limit_myr: 65000, ref: 'REQ-FLX-2026-2284', status: 'pending_rm_review' }] },
+      { phase: 'write', table: 'bank_credit_limits', rowsWritten: 1, reasoning: 'flexicash 65K NEW (status=pending_rm_review)', rowPreview: [{ product: 'flexicash', limit_myr: 65000, used_myr: 0, status: 'pending_rm_review' }] },
+      { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'action confirm (type=accept_preapproved_offer, status=pending_rm_review)' }
     ]
   },
   {
     step: 8,
-    timeStamp: 'Fri 26 Jun · 15:05',
+    act: 'act2',
+    stepWithinAct: 4,
+    timeStamp: 'Fri 31 Jul · 15:05',
+    asOfIso: '2026-07-31T07:05:00Z',
     narrative: 'Learning moment — user requests Tuesday FX brief; agent confirms and commits.',
     newMessages: [
       {
@@ -492,6 +603,43 @@ Confirmation sent to ahmad@sunrisetrading.my.`,
           'infer_learning_events: NEW row le_001 (confirmed_by_user=true)'
         ]
       }
+    ],
+    toolTrace: [
+      { phase: 'read', table: 'infer_user_preferences', rowsRead: 0, toolCall: "get_user_preferences(customer_id='ahmad_01', key='weekly_fx_brief')", rowPreview: [{ key: 'weekly_fx_brief', value: '(none yet)' }] },
+      { phase: 'reason', reasoning: 'Confirm-before-commit pattern: paraphrase Tuesday 08:00 EUR/AUD → user adds USD → commit final pref.' },
+      { phase: 'write', table: 'infer_user_preferences', rowsWritten: 1, reasoning: 'NEW pref_fxbrief_001 (EUR/AUD/USD Tue 08:00)', rowPreview: [{ pref_id: 'pref_fxbrief_001', key: 'weekly_fx_brief', currencies: 'EUR/AUD/USD', day: 'Tuesday', time: '08:00' }] },
+      { phase: 'write', table: 'infer_learning_events', rowsWritten: 1, reasoning: 'NEW le_001 (confirmed_by_user=true)' },
+      { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'preference change confirmed' }
     ]
   }
 ];
+
+// Helpers — used by page.tsx state model and components
+
+export function getStepIndex(act: ActId, stepWithinAct: number): number {
+  const found = STEPS.findIndex((s) => s.act === act && s.stepWithinAct === stepWithinAct);
+  if (found < 0) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(
+        `[demo_storyboard] getStepIndex fallback to 0 for (act=${act}, stepWithinAct=${stepWithinAct})`
+      );
+    }
+    return 0;
+  }
+  return found;
+}
+
+export function getStepsForAct(act: ActId): DemoStep[] {
+  return STEPS.filter((s) => s.act === act);
+}
+
+export function isLastStepOfAct(act: ActId, stepWithinAct: number): boolean {
+  if (act === 'intro') return true;
+  return stepWithinAct >= MAX_STEP_WITHIN_ACT;
+}
+
+export const ACT_LABELS: Record<ActId, string> = {
+  intro: 'Intro',
+  act1: 'Act 1 — FX Hero',
+  act2: 'Act 2 — FlexiCash + Learning'
+};

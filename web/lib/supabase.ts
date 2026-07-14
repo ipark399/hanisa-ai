@@ -5,6 +5,7 @@
 // Service role key bypasses RLS — use only inside API routes.
 
 import { createClient } from '@supabase/supabase-js';
+import { AsyncLocalStorage } from 'async_hooks';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -18,10 +19,21 @@ export const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
   db: { schema: 'public' }
 });
 
+// Per-request "as of" override (ws-160). API routes wrap their handler in
+// runWithDemoAsOf(iso, fn) when the active demo step has an asOfIso — tools
+// then see that timestamp instead of the static env default. Fixes Act 2
+// (Fri 26 Jun) reading Act 1 (Mon 8 Jun) snapshots.
+const asOfStore = new AsyncLocalStorage<string>();
+
+export function runWithDemoAsOf<T>(asOfIso: string | undefined, fn: () => Promise<T>): Promise<T> {
+  if (!asOfIso) return fn();
+  return asOfStore.run(asOfIso, fn);
+}
+
 // Demo state helper — all SQL queries should respect this "as of" timestamp.
-// In production this would be NOW(). For demo, it's the simulated time.
+// Priority: per-request store (set by runWithDemoAsOf) > env var > Act 1 default.
 export function getDemoCurrentTimestamp(): string {
-  return process.env.DEMO_INITIAL_TIMESTAMP || '2026-06-08T01:00:00Z';
+  return asOfStore.getStore() ?? process.env.DEMO_INITIAL_TIMESTAMP ?? '2026-07-13T01:00:00Z';
 }
 
 export const DEMO_CUSTOMER_ID = process.env.DEMO_CUSTOMER_ID || 'ahmad_01';

@@ -43,7 +43,7 @@ export async function record_user_action(args: {
     const detailsObj = args.details ?? {};
     const eurAmount = Number(detailsObj.amount_eur ?? 8200);
     const rate = Number(detailsObj.rate ?? 4.95);
-    const valueDate = (detailsObj.value_date as string) ?? '2026-06-17';
+    const valueDate = (detailsObj.value_date as string) ?? '2026-07-22';
     const tradeRef = (detailsObj.trade_ref as string) ?? `FXFW-${new Date().getFullYear()}-${Math.floor(Math.random() * 9999)}`;
     await supabase.from('bank_scheduled_payments').insert({
       scheduled_payment_id: rid('sched_fx'),
@@ -59,7 +59,7 @@ export async function record_user_action(args: {
       payment_method: 'wire',
       reference: tradeRef,
       recurrence: 'one_off',
-      status: 'pending',
+      status: 'pending_rm_review',
       source: 'core_banking'
     });
     domainResult = { trade_ref: tradeRef, value_date: valueDate, locked_rate: rate, amount_eur: eurAmount };
@@ -79,7 +79,7 @@ export async function record_user_action(args: {
         product_type: 'flexicash',
         account_id: null,
         enrolled_at: now.slice(0, 10),
-        status: 'active',
+        status: 'pending_rm_review',
         principal_amount: 65000,
         outstanding_amount: 0,
         currency: 'MYR',
@@ -96,7 +96,7 @@ export async function record_user_action(args: {
         currency: 'MYR',
         interest_rate: 8.5,
         effective_from: now.slice(0, 10),
-        status: 'active',
+        status: 'pending_rm_review',
         source: 'core_banking'
       });
       domainResult = { activation_ref: `FLX-${new Date().getFullYear()}-${Math.floor(Math.random() * 9999)}`, approved_amount: 65000 };

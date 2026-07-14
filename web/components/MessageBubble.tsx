@@ -35,7 +35,7 @@ function renderText(text: string) {
 
 interface Props {
   msg: DemoMessage;
-  onAction?: (actionId: string) => void;
+  onAction?: (actionId: string, label?: string) => void;
   disabledActions?: Set<string>;
 }
 
@@ -51,9 +51,9 @@ export default function MessageBubble({ msg, onAction, disabledActions }: Props)
             {msg.actions.map((a) => (
               <button
                 key={a.actionId}
-                className={`action-btn ${a.variant === 'primary' ? 'primary' : a.variant === 'danger' ? 'danger' : ''}`}
+                className={`action-btn${a.variant ? ` ${a.variant}` : ''}`}
                 disabled={disabledActions?.has(a.actionId)}
-                onClick={() => onAction?.(a.actionId)}
+                onClick={() => onAction?.(a.actionId, a.label)}
               >
                 {a.label}
               </button>

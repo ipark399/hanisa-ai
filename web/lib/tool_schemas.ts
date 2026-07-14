@@ -173,6 +173,20 @@ export const TOOL_SCHEMAS: Anthropic.Tool[] = [
     }
   },
 
+  // D2. Market context (judgment-assist, no predictions)
+  {
+    name: 'get_bloomberg_market_context',
+    description: 'Retrieve current market context (news, FX rate position, historical percentile) to help user judgment. Does NOT provide predictions.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        fx_pair: { type: 'string', enum: ['EUR/MYR', 'USD/MYR', 'AUD/MYR'] },
+        as_of_iso: { type: 'string', format: 'date-time', description: 'ISO timestamp for the market snapshot' }
+      },
+      required: ['fx_pair', 'as_of_iso']
+    }
+  },
+
   // E. Actions
   {
     name: 'record_user_action',
@@ -186,6 +200,39 @@ export const TOOL_SCHEMAS: Anthropic.Tool[] = [
         details: { type: 'object' }
       },
       required: ['action_type']
+    }
+  },
+  // F. UI affordance — area 4 (REQ-CIMB-02 #13)
+  //   The chat layer intercepts `suggest_action` tool_use blocks and converts
+  //   them into ChatResult.actions (whitelisted). It is NOT dispatched as a
+  //   real tool — the LLM uses it to attach an interactive button to its reply.
+  {
+    name: 'suggest_action',
+    description:
+      'Attach an interactive button to your reply. Use this when the user might want to take a specific next step (e.g., show alternative hedges, compare loans, see rate history). The button label is shown in the chat bubble; clicking it triggers the matching action_id. Only whitelisted action_ids are rendered; unknown action_ids are silently dropped on the backend.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        label: {
+          type: 'string',
+          description: 'Button label (≤ 30 chars, action-oriented verb phrase like "Show FX option" or "Compare hedges").'
+        },
+        action_id: {
+          type: 'string',
+          description:
+            'Whitelisted action ID. Storyboard actions: lock_fx_forward, accept_preapproved_offer, show_loan_options, decline_fx, decline_flx. LLM-allowed dynamic actions: show_fx_option, show_fwd_details, compare_hedges, show_rate_history, show_alternatives, show_installment_loan, show_gbp_exposure.'
+        },
+        variant: {
+          type: 'string',
+          enum: ['primary', 'secondary', 'danger'],
+          description: 'Visual style — primary for the main CTA, secondary for alternatives, danger for decline/cancel.'
+        },
+        payload: {
+          type: 'object',
+          description: 'Optional action-specific data (e.g., { product_id: "opt_eur_30d" }). Echoed back to the handler.'
+        }
+      },
+      required: ['label', 'action_id']
     }
   },
   {

@@ -1,15 +1,15 @@
 :root {
-  --wa-bg: #ECE5DD;
-  --wa-header: #075E54;
+  --wa-bg: #F4F4F4;
+  --wa-header: #E60028;
   --wa-header-text: #ffffff;
-  --wa-self-bubble: #DCF8C6;
+  --wa-self-bubble: #FDE3E3;
   --wa-other-bubble: #ffffff;
   --wa-text: #303030;
   --wa-time: #767676;
   --wa-intel-banner: #FEF6D5;
   --wa-intel-border: #F4D03F;
-  --primary: #006D77;
-  --primary-hover: #005A60;
+  --primary: #E60028;
+  --primary-hover: #B8001F;
   --danger: #B53F3F;
   --neutral-border: #D5D5D5;
   --panel-bg: #F8F9FB;
@@ -67,13 +67,17 @@ html, body {
 .main {
   flex: 1;
   display: grid;
-  grid-template-columns: 400px 1fr;
+  /* 큰 viewport에서 ContextPanel이 무한정 넓어지지 않도록 grid 자체에 max
+     너비를 두고 가운데 정렬. 폰 400px + gap 24 + 패널 ≤ 1100px ≈ 1524px. */
+  grid-template-columns: 400px minmax(0, 1100px);
+  justify-content: center;
   gap: 24px;
   padding: 24px;
   min-height: 0;
+  align-items: stretch;
 }
 
-.main.no-panel { grid-template-columns: 400px; justify-content: center; }
+.main.no-panel { grid-template-columns: 400px; }
 
 /* Phone frame */
 .phone-frame {
@@ -85,6 +89,9 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  /* WhatsApp 폰 비율 유지 — 매우 큰 viewport에서도 폰이 비현실적으로 길어지지
+     않도록 800px로 제한하고 main 셀 안에서 가운데 정렬한다. ContextPanel은
+     계속 stretch로 셀 전체를 차지해 콘텐츠 스크롤 영역을 확보한다. */
   max-height: 800px;
   align-self: center;
 }
@@ -112,7 +119,7 @@ html, body {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #25D366;
+  background: #B8001F;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -218,6 +225,8 @@ html, body {
 .action-btn.primary:hover { background: var(--primary-hover); }
 .action-btn.danger { color: var(--danger); border-color: #f8d7d7; }
 .action-btn.danger:hover { background: var(--danger); color: white; }
+.action-btn.secondary { background: #f7fafc; color: #4a5568; border-color: #cbd5e0; }
+.action-btn.secondary:hover { background: var(--primary); color: white; border-color: var(--primary); }
 .action-btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
 .composer {
@@ -385,4 +394,243 @@ html, body {
 }
 .bubble-row {
   animation: fadeIn 0.25s ease-out;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   REQ-CIMB-02 area 1: ScenarioTabs (top bar)
+   ───────────────────────────────────────────────────────────── */
+.scenario-tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--panel-border);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.scenario-tabs .tabs-group,
+.scenario-tabs .reset-group {
+  display: flex;
+  gap: 6px;
+}
+.scenario-tabs .tab {
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  background: #fafbfc;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.scenario-tabs .tab:hover { background: #edf2f7; }
+.scenario-tabs .tab.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.scenario-tabs .reset {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #718096;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.scenario-tabs .reset:hover:not(:disabled) { background: #fff5f5; color: #c53030; border-color: #feb2b2; }
+.scenario-tabs .reset:disabled { opacity: 0.45; cursor: not-allowed; }
+.scenario-tabs .reset-all { color: #c53030; border-color: #feb2b2; }
+.scenario-tabs .reset-all:hover { background: #fed7d7; }
+
+/* ─────────────────────────────────────────────────────────────
+   REQ-CIMB-02 area 2: Right Context Panel 3-zone layout
+   ───────────────────────────────────────────────────────────── */
+.panel-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.panel-zone:last-child { border-bottom: none; }
+.panel-zone .zone-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #4a5568;
+  font-weight: 700;
+}
+.panel-zone .zone-empty { color: #a0aec0; font-size: 12px; padding: 8px 0; }
+
+/* Zone 1 — Scenario header */
+.zone-scenario .zone-scope {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a202c;
+}
+.zone-scenario .zone-time {
+  font-size: 12px;
+  color: #2b6cb0;
+  font-family: 'SF Mono', monospace;
+}
+.zone-scenario .zone-narrative {
+  font-size: 12px;
+  color: #4a5568;
+  line-height: 1.4;
+}
+
+/* Zone 3 — Tool & DB Trace (Sankey) */
+.zone-trace .sankey-wrap { display: flex; flex-direction: column; gap: 10px; }
+
+.sankey-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sankey-spacer { flex: 1; }
+.sankey-toggle,
+.sankey-skip {
+  padding: 4px 10px;
+  border: 1px solid #cbd5e0;
+  background: #f7fafc;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+}
+.sankey-toggle:hover,
+.sankey-skip:hover { background: #edf2f7; }
+.sankey-toggle.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.sankey-empty {
+  background: #f7fafc;
+  border: 1px dashed #cbd5e0;
+  padding: 14px;
+  border-radius: 8px;
+  color: #a0aec0;
+  font-size: 12px;
+  text-align: center;
+}
+
+.sankey-svg {
+  background: #fcfcfd;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px;
+}
+
+/* 3-phase animation (Read → Reason → Write).
+   Each phase fades in sequentially; .no-anim short-circuits to final state. */
+@keyframes sankey-node-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.sankey-node {
+  opacity: 0;
+  transform-origin: left center;
+}
+.sankey-node-read   { animation: sankey-node-in 0.45s ease-out 0.05s forwards; }
+.sankey-node-reason { animation: sankey-node-in 0.45s ease-out 0.85s forwards; }
+.sankey-node-write  { animation: sankey-node-in 0.45s ease-out 1.45s forwards; }
+
+.sankey-svg.no-anim .sankey-node,
+.sankey-node.no-anim { opacity: 1 !important; animation: none !important; transform: none !important; }
+
+.sankey-edge {
+  stroke-dasharray: 4 3;
+  animation: sankey-edge-in 0.4s ease-out 1.0s forwards;
+  opacity: 0;
+}
+.sankey-edge.edge-reason-write { animation-delay: 1.6s; }
+.sankey-svg.no-anim .sankey-edge { opacity: 0.6; animation: none; }
+
+@keyframes sankey-edge-in {
+  from { opacity: 0; }
+  to   { opacity: 0.6; }
+}
+
+/* Row preview table */
+.row-preview { display: flex; flex-direction: column; gap: 10px; }
+.row-preview-block {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+.row-preview-label { font-weight: 700; color: #2d3748; margin-bottom: 4px; }
+.row-preview-tool { color: #718096; font-weight: 400; font-family: 'SF Mono', monospace; }
+.row-preview-rows { display: flex; flex-direction: column; gap: 4px; }
+.row-preview-row {
+  background: #f7fafc;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', monospace;
+  font-size: 10px;
+  color: #2d3748;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   REQ-CIMB-02 area 3: Free QA History footer
+   ───────────────────────────────────────────────────────────── */
+.panel-footer.freeqa-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 4px;
+  border-top: 1px solid var(--panel-border);
+}
+.freeqa-empty {
+  background: #f7fafc;
+  border: 1px dashed #cbd5e0;
+  padding: 12px;
+  border-radius: 8px;
+  color: #a0aec0;
+  font-size: 11px;
+  text-align: center;
+}
+.freeqa-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.freeqa-row {
+  border-left: 3px solid transparent;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: #ffffff;
+}
+.freeqa-row.freeqa-user   { border-left-color: #3182CE; background: #EBF8FF; }
+.freeqa-row.freeqa-agent  { border-left-color: #805AD5; background: #F2EAFF; }
+.freeqa-row.freeqa-system { border-left-color: #C53030; background: #FFF5F5; }
+.freeqa-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #4a5568;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.freeqa-time { font-family: 'SF Mono', monospace; color: #718096; font-weight: 400; }
+.freeqa-text {
+  color: #1a202c;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
