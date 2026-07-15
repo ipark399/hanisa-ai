@@ -1,6 +1,6 @@
 'use client';
 
-import { STEPS, ACT_LABELS, MAX_STEP_WITHIN_ACT } from '@/lib/demo_storyboard';
+import { STEPS, ACT_LABELS, getMaxStepForAct } from '@/lib/demo_storyboard';
 import type { ActiveMode } from '@/lib/demo_storyboard';
 
 interface Props {
@@ -39,9 +39,10 @@ export default function DemoControls({
   } else if (activeMode === 'free') {
     label = 'Free QA · no scripted steps';
   } else {
-    label = `${ACT_LABELS[activeMode]} · Step ${stepWithinAct} of ${MAX_STEP_WITHIN_ACT}`;
+    const maxStep = getMaxStepForAct(activeMode);
+    label = `${ACT_LABELS[activeMode]} · Step ${stepWithinAct} of ${maxStep}`;
     canPrev = stepWithinAct > 1;
-    canNext = stepWithinAct < MAX_STEP_WITHIN_ACT;
+    canNext = stepWithinAct < maxStep;
   }
 
   return (

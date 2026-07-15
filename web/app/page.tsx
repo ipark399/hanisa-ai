@@ -13,7 +13,7 @@ import {
   type DemoMessage,
   type ActiveMode,
   type ActId,
-  MAX_STEP_WITHIN_ACT
+  getMaxStepForAct
 } from '@/lib/demo_storyboard';
 import type { StepContext } from '@/lib/chat_loop';
 
@@ -177,7 +177,7 @@ export default function DemoPage() {
 
   function handleNext() {
     if (activeMode !== 'act1' && activeMode !== 'act2') return;
-    if (stepWithinAct < MAX_STEP_WITHIN_ACT) {
+    if (stepWithinAct < getMaxStepForAct(activeMode)) {
       const newStep = stepWithinAct + 1;
       setStepWithinAct(newStep);
       // dry-run patch (ii): explicit visit lifts the skip.
@@ -257,7 +257,7 @@ export default function DemoPage() {
   > = {
     lock_fx_forward: {
       act: 'act1',
-      stepWithinAct: 4,
+      stepWithinAct: 3,
       apiCall: (asOfIso) =>
         fetch('/api/action', {
           method: 'POST',
@@ -265,8 +265,8 @@ export default function DemoPage() {
           body: JSON.stringify({
             action_type: 'lock_fx_forward',
             referenced_entity_type: 'fx_opportunity',
-            referenced_entity_id: 'fx_opp_eval_2026-06-08',
-            details: { amount_eur: 8200, rate: 4.95, value_date: '2026-06-17' },
+            referenced_entity_id: 'fx_opp_eval_2026-07-13',
+            details: { amount_eur: 8200, rate: 4.95, value_date: '2026-07-22' },
             session_id: SESSION_ID,
             as_of_iso: asOfIso
           })

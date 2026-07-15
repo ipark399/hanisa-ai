@@ -8,8 +8,10 @@ import { anthropic, MODEL_ID, cacheControl } from '@/lib/anthropic';
 import { SYSTEM_PERSONA } from '@/lib/persona';
 import { runWithDemoAsOf } from '@/lib/supabase';
 
+// lock_fx_forward는 storyboard Step 3의 하드코딩된 "Request received..." 문구를 신뢰한다.
+// LLM 호출 시 프롬프트의 State 지시를 무시하고 "Locked at 4.95..." 같이 자체 재작성하는
+// self-attention 결함 발견 (ws-174, 2026-07-15). LLM 재작성 차단으로 문구 안정성 확보.
 const CONFIRM_PROMPTS: Record<string, string> = {
-  lock_fx_forward: `Confirm FX Forward request received (pending RM review). Use these facts: locked_rate, value_date, amount_eur, trade_ref (prepend "REQ-" to trade_ref). State: "Request received. Reference: REQ-{trade_ref}. Your RM will contact you within 24 hours to finalize. Estimated saving MYR 1,064 vs spot." Keep concise. Do NOT say "activated" or "completed".`,
   accept_preapproved_offer: `Confirm FlexiCash request received (pending RM review). State: "Request received. Reference: REQ-{activation_ref}. Your RM will contact you within 24 hours to finalize. MYR 65,000 credit line at 8.5% p.a. once activated." Keep concise. Do NOT say "activated" or "available immediately".`,
   decline_offer: `Acknowledge politely that Mr. Bakri declined. One sentence.`
 };

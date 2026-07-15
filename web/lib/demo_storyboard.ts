@@ -63,7 +63,11 @@ export interface DemoStep {
   toolTrace?: ToolTraceEntry[]; // Sankey input — undefined/empty = no trace this step
 }
 
-export const MAX_STEP_WITHIN_ACT = 4;
+export function getMaxStepForAct(act: ActId): number {
+  if (act === 'intro') return 0;
+  const stepsInAct = STEPS.filter((s) => s.act === act).map((s) => s.stepWithinAct);
+  return stepsInAct.length > 0 ? Math.max(...stepsInAct) : 0;
+}
 
 export const STEPS: DemoStep[] = [
   {
@@ -213,74 +217,6 @@ Lock the rate now?`,
     step: 3,
     act: 'act1',
     stepWithinAct: 3,
-    timeStamp: 'Mon 13 Jul · 10:31',
-    asOfIso: '2026-07-13T02:31:00Z',
-    narrative: 'Mr. Bakri asks for hedging product comparison.',
-    newMessages: [
-      {
-        id: 'msg_003',
-        side: 'self',
-        time: '10:31',
-        text: 'Recommend a hedging product.',
-        step: 3
-      },
-      {
-        id: 'msg_004',
-        side: 'other',
-        time: '10:31',
-        text:
-`Three CIMB options that fit your monthly EUR pattern:
-
-**FX Forward Contract** — lock the rate today for delivery on your payment date. Best for: your usual 30-day-ahead visibility. Indicative pricing: spot + 25 bps forward points.
-
-**FX Limit Order** — auto-lock when EUR/MYR hits a target rate. Best for: when you can wait a few days for a better rate. No upfront cost.
-
-**EUR Currency Account** — hold a EUR balance for predictable monthly drawdowns. Best for: smoothing timing risk. Earns ~0.5% p.a.
-
-Given your pattern, an FX Forward typically saves 0.5–1.5% vs. spot. Want me to walk through the forward terms?
-
-_Informational. Subject to product terms and approval._`,
-        step: 3
-      }
-    ],
-    context: [
-      {
-        label: 'Intent classification',
-        rows: [
-          { k: 'Intent', v: 'request_hedging_recommendation' },
-          { k: 'Confidence', v: '0.94' },
-          { k: 'Topic', v: 'fx' }
-        ]
-      },
-      {
-        label: 'Recommendation query',
-        lines: [
-          "find_products_by_use_case(use_case_tag='fx_hedging', complexity_level=4)",
-          'Matched: fx_forward_v1 / fx_limit_order / eur_currency_account',
-          'Filtered out: fx_hedging_program (Level 5 only)'
-        ]
-      },
-      {
-        label: 'Per-product pricing (2026-07-13)',
-        rows: [
-          { k: 'FX Forward 30d', v: '25 bps' },
-          { k: 'FX Forward 7d', v: '18 bps' },
-          { k: 'FX Limit Order', v: '0 bps upfront' },
-          { k: 'EUR FCD 90d', v: '0.5% p.a.' }
-        ]
-      }
-    ],
-    toolTrace: [
-      { phase: 'read', table: 'bank_product_catalog', rowsRead: 3, toolCall: "find_products_by_use_case(tag='fx_hedging', complexity_level=4)", rowPreview: [{ product_id: 'fx_forward_v1', name: 'FX Forward', use_case_tags: ['fx_hedging'] }, { product_id: 'fx_limit_order', name: 'FX Limit Order', use_case_tags: ['fx_hedging'] }, { product_id: 'eur_currency_account', name: 'EUR Currency Account', use_case_tags: ['fx_hedging'] }] },
-      { phase: 'read', table: 'bank_product_pricing_daily', rowsRead: 3, toolCall: 'get_product_pricing_today(product_ids=[fx_forward_v1, fx_limit_order, eur_currency_account])', rowPreview: [{ product_id: 'fx_forward_v1', forward_bps: 25 }, { product_id: 'fx_limit_order', upfront_bps: 0 }, { product_id: 'eur_currency_account', interest_pa_pct: 0.5 }] },
-      { phase: 'reason', reasoning: 'L4 filter excludes fx_hedging_program (L5 only). Recommendation composer ranks Forward best for Ahmad pattern.' },
-      { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'recommendation reply (type=product_recommendation)' }
-    ]
-  },
-  {
-    step: 4,
-    act: 'act1',
-    stepWithinAct: 4,
     timeStamp: 'Mon 13 Jul · 10:33',
     asOfIso: '2026-07-13T02:33:00Z',
     narrative: 'Mr. Bakri taps "Lock now" → FX Forward request submitted for RM review.',
@@ -290,7 +226,7 @@ _Informational. Subject to product terms and approval._`,
         side: 'system',
         time: '10:33',
         text: '✓ You tapped: Lock now',
-        step: 4
+        step: 3
       },
       {
         id: 'msg_006',
@@ -300,7 +236,7 @@ _Informational. Subject to product terms and approval._`,
 `Request received. Reference: **REQ-FXFW-2026-7142**. Your RM will contact you within 24 hours to finalize.
 
 Estimated saving **MYR 1,064** vs spot.`,
-        step: 4
+        step: 3
       }
     ],
     context: [
@@ -332,7 +268,7 @@ Estimated saving **MYR 1,064** vs spot.`,
     ]
   },
   {
-    step: 5,
+    step: 4,
     act: 'act2',
     stepWithinAct: 1,
     timeStamp: 'Fri 31 Jul · 15:00',
@@ -344,7 +280,7 @@ Estimated saving **MYR 1,064** vs spot.`,
         side: 'system',
         time: '⤵',
         text: '— 3 weeks later —',
-        step: 5
+        step: 4
       },
       {
         id: 'msg_008',
@@ -358,7 +294,7 @@ Estimated saving **MYR 1,064** vs spot.`,
           { label: 'Show me options', actionId: 'show_loan_options' },
           { label: 'Not now', actionId: 'decline_flx', variant: 'danger' }
         ],
-        step: 5
+        step: 4
       }
     ],
     context: [
@@ -409,7 +345,7 @@ Estimated saving **MYR 1,064** vs spot.`,
     ]
   },
   {
-    step: 6,
+    step: 5,
     act: 'act2',
     stepWithinAct: 2,
     timeStamp: 'Fri 31 Jul · 15:01',
@@ -421,7 +357,7 @@ Estimated saving **MYR 1,064** vs spot.`,
         side: 'self',
         time: '15:01',
         text: 'Show me the cheapest loan for the shortfall.',
-        step: 6
+        step: 5
       },
       {
         id: 'msg_010',
@@ -439,7 +375,7 @@ Estimated saving **MYR 1,064** vs spot.`,
 Combining Working Capital MYR 40K + FlexiCash MYR 25K would cost roughly **MYR 320** in interest for 3 weeks vs. **MYR 460** if you take FlexiCash for the full MYR 65K. Want me to map this against your projected dates?
 
 _Informational. Subject to product terms and approval._`,
-        step: 6
+        step: 5
       }
     ],
     context: [
@@ -475,7 +411,7 @@ _Informational. Subject to product terms and approval._`,
     ]
   },
   {
-    step: 7,
+    step: 6,
     act: 'act2',
     stepWithinAct: 3,
     timeStamp: 'Fri 31 Jul · 15:03',
@@ -487,7 +423,7 @@ _Informational. Subject to product terms and approval._`,
         side: 'system',
         time: '15:03',
         text: '✓ You tapped: Apply',
-        step: 7
+        step: 6
       },
       {
         id: 'msg_012',
@@ -497,7 +433,7 @@ _Informational. Subject to product terms and approval._`,
 `Request received. Reference: **REQ-FLX-2026-2284**. Your RM will contact you within 24 hours to finalize.
 
 **MYR 65,000** credit line at **8.5% p.a.** once activated.`,
-        step: 7
+        step: 6
       }
     ],
     context: [
@@ -530,7 +466,7 @@ _Informational. Subject to product terms and approval._`,
     ]
   },
   {
-    step: 8,
+    step: 7,
     act: 'act2',
     stepWithinAct: 4,
     timeStamp: 'Fri 31 Jul · 15:05',
@@ -542,7 +478,7 @@ _Informational. Subject to product terms and approval._`,
         side: 'self',
         time: '15:05',
         text: 'Actually, can you remind me of FX trends every Tuesday morning?',
-        step: 8
+        step: 7
       },
       {
         id: 'msg_014',
@@ -550,14 +486,14 @@ _Informational. Subject to product terms and approval._`,
         time: '15:05',
         text:
 `Sure, Mr. Bakri. I'll send a brief FX summary every Tuesday at 8 AM. Anything specific you want included beyond EUR/MYR and AUD/MYR?`,
-        step: 8
+        step: 7
       },
       {
         id: 'msg_015',
         side: 'self',
         time: '15:06',
         text: 'Add USD/MYR too.',
-        step: 8
+        step: 7
       },
       {
         id: 'msg_016',
@@ -565,7 +501,7 @@ _Informational. Subject to product terms and approval._`,
         time: '15:06',
         text:
 `Got it. Tuesday FX brief covers EUR, AUD, USD vs MYR. Starting tomorrow at 08:00.`,
-        step: 8
+        step: 7
       }
     ],
     context: [
@@ -635,7 +571,7 @@ export function getStepsForAct(act: ActId): DemoStep[] {
 
 export function isLastStepOfAct(act: ActId, stepWithinAct: number): boolean {
   if (act === 'intro') return true;
-  return stepWithinAct >= MAX_STEP_WITHIN_ACT;
+  return stepWithinAct >= getMaxStepForAct(act);
 }
 
 export const ACT_LABELS: Record<ActId, string> = {
