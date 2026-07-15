@@ -368,7 +368,7 @@ Estimated saving **MYR 1,064** vs spot.`,
 
 **Revolving Credit (auto-enrollment)** — your existing line has MYR 40K unused at **8.0% p.a.**, auto-enrolled based on your account standing. Higher rate than FlexiCash for the same purpose.
 
-A single FlexiCash draw at MYR 65K would cost about **MYR 243** in interest over 3 weeks — cheaper than splitting with the Working Capital line (~MYR 278). Want me to walk through applying?
+A single FlexiCash draw at MYR 65K would cost about **MYR 243** in interest over 3 weeks — cheaper than splitting with the Revolving Credit line (~MYR 278). Want me to walk through applying?
 
 _Informational. Subject to product terms and approval._`,
         step: 5
