@@ -366,7 +366,7 @@ Estimated saving **MYR 1,064** vs spot.`,
 
 **FlexiCash (pre-approved)** — MYR 65K available, **6.5% p.a.**, draw what you need, no setup. Covers the full gap in one draw.
 
-**Working Capital Facility (auto-revolving)** — your existing line has MYR 40K unused at **8.0% p.a.**, auto-renews each cycle. Higher rate than FlexiCash for the same purpose.
+**Revolving Credit (auto-enrollment)** — your existing line has MYR 40K unused at **8.0% p.a.**, auto-enrolled based on your account standing. Higher rate than FlexiCash for the same purpose.
 
 A single FlexiCash draw at MYR 65K would cost about **MYR 243** in interest over 3 weeks — cheaper than splitting with the Working Capital line (~MYR 278). Want me to walk through applying?
 
@@ -386,7 +386,7 @@ _Informational. Subject to product terms and approval._`,
         label: 'Products matched (use_case=short_term_shortfall, L4)',
         lines: [
           'flexicash — 6.5% p.a. (pre-approved 65K, no setup)',
-          'working_capital_facility — 8.0% p.a. (auto-revolving, unused 40K)'
+          'revolving_credit (Revolving Credit) — 8.0% p.a. (auto-enrollment, unused 40K)'
         ]
       },
       {
@@ -398,7 +398,7 @@ _Informational. Subject to product terms and approval._`,
       }
     ],
     toolTrace: [
-      { phase: 'read', table: 'bank_product_catalog', rowsRead: 2, toolCall: "find_products_by_use_case(tag='short_term_shortfall', complexity_level=4)", rowPreview: [{ product_id: 'flexicash', name: 'FlexiCash' }, { product_id: 'working_capital_facility', name: 'Working Capital Facility' }] },
+      { phase: 'read', table: 'bank_product_catalog', rowsRead: 2, toolCall: "find_products_by_use_case(tag='short_term_shortfall', complexity_level=4)", rowPreview: [{ product_id: 'flexicash', name: 'FlexiCash' }, { product_id: 'working_capital_facility', name: 'Revolving Credit' }] },
       { phase: 'read', table: 'bank_credit_limits', rowsRead: 1, toolCall: 'get_credit_limits(customer_id=ahmad_01, product=working_capital)', rowPreview: [{ product: 'working_capital', limit: 200000, used: 160000, unused: 40000 }] },
       { phase: 'read', table: 'bank_product_pricing_daily', rowsRead: 2, toolCall: 'get_product_pricing_today(product_ids=[flexicash, working_capital_facility])', rowPreview: [{ product_id: 'flexicash', rate_pa: 6.5 }, { product_id: 'working_capital_facility', rate_pa: 8.0 }] },
       { phase: 'reason', reasoning: 'Rank by cost: FlexiCash 65K @ 6.5% single draw = MYR 243 interest (3w) vs split WC 40K @ 8.0% + FlexiCash 25K @ 6.5% = MYR 278. FlexiCash single is cheaper and covers full gap.' },
