@@ -329,14 +329,14 @@ Estimated saving **MYR 1,064** vs spot.`,
         rows: [
           { k: 'Offer ID', v: 'offer_flx_001' },
           { k: 'Amount', v: 'MYR 65,000' },
-          { k: 'Rate', v: '8.5% p.a.' },
+          { k: 'Rate', v: '6.5% p.a.' },
           { k: 'Valid until', v: '2026-10-05' }
         ]
       }
     ],
     toolTrace: [
       { phase: 'read', table: 'infer_cashflow_projection', rowsRead: 1, toolCall: 'get_cashflow_projection(horizon_days=21)', rowPreview: [{ horizon_date: '2026-08-21', projected_mean_myr: 3200, p25: 1800, p75: 5000, confidence: 0.81 }] },
-      { phase: 'read', table: 'bank_preapproved_offers', rowsRead: 1, toolCall: "get_preapproved_offers(customer_id='ahmad_01', active_only=true)", rowPreview: [{ offer_id: 'offer_flx_001', amount_myr: 65000, rate_pa: 8.5, valid_until: '2026-10-05' }] },
+      { phase: 'read', table: 'bank_preapproved_offers', rowsRead: 1, toolCall: "get_preapproved_offers(customer_id='ahmad_01', active_only=true)", rowPreview: [{ offer_id: 'offer_flx_001', amount_myr: 65000, rate_pa: 6.5, valid_until: '2026-10-05' }] },
       { phase: 'read', table: 'bank_credit_limits', rowsRead: 1, toolCall: 'get_credit_limits(customer_id=ahmad_01)', rowPreview: [{ product: 'working_capital', limit: 100000, used: 60000, unused: 40000 }] },
       { phase: 'reason', reasoning: 'check_flexicash_opportunity → TRUE: 21-day projection dips below MYR 5K AND active pre-approved FlexiCash offer.' },
       { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'trigger event (type=flexicash_trigger_eval, result=fired)' }
@@ -362,15 +362,13 @@ Estimated saving **MYR 1,064** vs spot.`,
         side: 'other',
         time: '15:01',
         text:
-`For a 3-week shortfall of about MYR 65K, three CIMB options ranked by cost:
+`For your 3-week cash-management need up to MYR 65K, two options fit:
 
-**Working Capital Facility top-up** — your existing line has MYR 40K unused at **7.2% p.a.** Cheapest, but capped at MYR 40K.
+**FlexiCash (pre-approved)** — MYR 65K available, **6.5% p.a.**, draw what you need, no setup. Covers the full gap in one draw.
 
-**FlexiCash (pre-approved)** — MYR 65K available, **8.5% p.a.**, draw what you need, no setup. Covers full gap.
+**Working Capital Facility (auto-revolving)** — your existing line has MYR 40K unused at **8.0% p.a.**, auto-renews each cycle. Higher rate than FlexiCash for the same purpose.
 
-**Trade Bridging Loan** — **6.8% p.a.** but requires documentary support and is for trade-linked needs only.
-
-Combining Working Capital MYR 40K + FlexiCash MYR 25K would cost roughly **MYR 320** in interest for 3 weeks vs. **MYR 460** if you take FlexiCash for the full MYR 65K. Want me to map this against your projected dates?
+A single FlexiCash draw at MYR 65K would cost about **MYR 243** in interest over 3 weeks — cheaper than splitting with the Working Capital line (~MYR 278). Want me to walk through applying?
 
 _Informational. Subject to product terms and approval._`,
         step: 5
@@ -387,24 +385,23 @@ _Informational. Subject to product terms and approval._`,
       {
         label: 'Products matched (use_case=short_term_shortfall, L4)',
         lines: [
-          'working_capital_facility — 7.2% p.a. (capped at unused 40K)',
-          'flexicash — 8.5% p.a. (pre-approved 65K)',
-          'trade_bridging_loan — 6.8% p.a. (eligibility: trade-linked only)'
+          'flexicash — 6.5% p.a. (pre-approved 65K, no setup)',
+          'working_capital_facility — 8.0% p.a. (auto-revolving, unused 40K)'
         ]
       },
       {
         label: 'User context applied',
         lines: [
           'get_credit_limits → WC unused MYR 40K',
-          'system prompt rule: existing unused 한도 우선'
+          'system prompt rule: cheapest applicable product first'
         ]
       }
     ],
     toolTrace: [
-      { phase: 'read', table: 'bank_product_catalog', rowsRead: 3, toolCall: "find_products_by_use_case(tag='short_term_shortfall', complexity_level=4)", rowPreview: [{ product_id: 'working_capital_facility', name: 'Working Capital Facility' }, { product_id: 'flexicash', name: 'FlexiCash' }, { product_id: 'trade_bridging_loan', name: 'Trade Bridging Loan' }] },
-      { phase: 'read', table: 'bank_credit_limits', rowsRead: 1, toolCall: 'get_credit_limits(customer_id=ahmad_01, product=working_capital)', rowPreview: [{ product: 'working_capital', limit: 100000, used: 60000, unused: 40000 }] },
-      { phase: 'read', table: 'bank_product_pricing_daily', rowsRead: 3, toolCall: 'get_product_pricing_today(product_ids=[working_capital_facility, flexicash, trade_bridging_loan])', rowPreview: [{ product_id: 'working_capital_facility', rate_pa: 7.2 }, { product_id: 'flexicash', rate_pa: 8.5 }, { product_id: 'trade_bridging_loan', rate_pa: 6.8 }] },
-      { phase: 'reason', reasoning: 'Rank by cost: combine WC unused 40K @ 7.2% + FlexiCash 25K @ 8.5% = MYR 320 interest (3w) vs FlexiCash 65K alone = MYR 460.' },
+      { phase: 'read', table: 'bank_product_catalog', rowsRead: 2, toolCall: "find_products_by_use_case(tag='short_term_shortfall', complexity_level=4)", rowPreview: [{ product_id: 'flexicash', name: 'FlexiCash' }, { product_id: 'working_capital_facility', name: 'Working Capital Facility' }] },
+      { phase: 'read', table: 'bank_credit_limits', rowsRead: 1, toolCall: 'get_credit_limits(customer_id=ahmad_01, product=working_capital)', rowPreview: [{ product: 'working_capital', limit: 200000, used: 160000, unused: 40000 }] },
+      { phase: 'read', table: 'bank_product_pricing_daily', rowsRead: 2, toolCall: 'get_product_pricing_today(product_ids=[flexicash, working_capital_facility])', rowPreview: [{ product_id: 'flexicash', rate_pa: 6.5 }, { product_id: 'working_capital_facility', rate_pa: 8.0 }] },
+      { phase: 'reason', reasoning: 'Rank by cost: FlexiCash 65K @ 6.5% single draw = MYR 243 interest (3w) vs split WC 40K @ 8.0% + FlexiCash 25K @ 6.5% = MYR 278. FlexiCash single is cheaper and covers full gap.' },
       { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'loan recommendation reply' }
     ]
   },
@@ -430,7 +427,7 @@ _Informational. Subject to product terms and approval._`,
         text:
 `Request received. Reference: **REQ-FLX-2026-2284**. Your RM will contact you within 24 hours to finalize.
 
-**MYR 65,000** credit line at **8.5% p.a.** once activated.`,
+**MYR 65,000** credit line at **6.5% p.a.** once activated.`,
         step: 6
       }
     ],
@@ -441,7 +438,7 @@ _Informational. Subject to product terms and approval._`,
           { k: 'Type', v: 'accept_preapproved_offer' },
           { k: 'Reference', v: 'REQ-FLX-2026-2284' },
           { k: 'Limit', v: 'MYR 65,000' },
-          { k: 'Rate', v: '8.5% p.a.' },
+          { k: 'Rate', v: '6.5% p.a.' },
           { k: 'Status', v: 'pending_rm_review' }
         ]
       },
@@ -455,8 +452,8 @@ _Informational. Subject to product terms and approval._`,
       }
     ],
     toolTrace: [
-      { phase: 'read', table: 'bank_preapproved_offers', rowsRead: 1, toolCall: "get_preapproved_offer(id='offer_flx_001')", rowPreview: [{ offer_id: 'offer_flx_001', amount_myr: 65000, rate_pa: 8.5 }] },
-      { phase: 'reason', reasoning: 'accept_preapproved_offer action — submit FlexiCash request MYR 65K @ 8.5% p.a.; ref REQ-FLX-2026-2284. Pending RM review.' },
+      { phase: 'read', table: 'bank_preapproved_offers', rowsRead: 1, toolCall: "get_preapproved_offer(id='offer_flx_001')", rowPreview: [{ offer_id: 'offer_flx_001', amount_myr: 65000, rate_pa: 6.5 }] },
+      { phase: 'reason', reasoning: 'accept_preapproved_offer action — submit FlexiCash request MYR 65K @ 6.5% p.a.; ref REQ-FLX-2026-2284. Pending RM review.' },
       { phase: 'write', table: 'bank_preapproved_offers', rowsWritten: 1, reasoning: 'status → accepted' },
       { phase: 'write', table: 'bank_products_held', rowsWritten: 1, reasoning: 'flexicash enrolled (status=pending_rm_review)', rowPreview: [{ product: 'flexicash', limit_myr: 65000, ref: 'REQ-FLX-2026-2284', status: 'pending_rm_review' }] },
       { phase: 'write', table: 'bank_credit_limits', rowsWritten: 1, reasoning: 'flexicash 65K NEW (status=pending_rm_review)', rowPreview: [{ product: 'flexicash', limit_myr: 65000, used_myr: 0, status: 'pending_rm_review' }] },
