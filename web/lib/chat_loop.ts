@@ -170,8 +170,34 @@ export async function runChat(
         .map((b) => b.text)
         .join('\n')
         .trim();
+
+      // ws-174 fix (RM approval gate for Free-QA apply intent):
+      // If the LLM emitted a gated action (`accept_preapproved_offer` or
+      // `lock_fx_forward`) via suggest_action AND its reply is EITHER
+      // compliance-boilerplate-only OR fabricates completion ("activated",
+      // fake reference numbers), replace the reply with a canned RM-review
+      // template. Substantive replies (data tables, reasoning) are kept —
+      // the emitted button remains available in both paths, so clicking it
+      // still routes through STORYBOARD_ACTION_MAP → /api/action →
+      // storyboard Step 3 hardcoded confirmation (real reference number).
+      // Narrow triggers preserve hero-moment replies (FX-P1 4-row table,
+      // FX-M1 Bloomberg citation) that emit `lock_fx_forward` as a follow-up
+      // suggestion but produce rich data text.
+      const GATED_ACTIONS: ReadonlySet<string> = new Set([
+        'accept_preapproved_offer',
+        'lock_fx_forward'
+      ]);
+      const COMPLIANCE_ONLY = /^\s*informational\.?\s*subject to product terms and approval\.?\s*$/i;
+      const DANGEROUS_COMPLETION = /\b(activated?|completed?|line is (now )?(open|active|available|set)|approved and (set|open)|it'?s all set|you'?re all set|all set,?\s+(?:mr\.?|ms\.?|dr\.?)|reference\s+(?:REQ-|FLX-|FXFW-|FX-)\w+|ref\.?\s+(?:REQ-|FLX-|FXFW-|FX-)\w+)/i;
+      const gateAction = actions.find((a) => GATED_ACTIONS.has(a.action_id));
+      const needsCannedReply =
+        gateAction && (COMPLIANCE_ONLY.test(text) || DANGEROUS_COMPLETION.test(text));
+      const finalReply = needsCannedReply
+        ? `Sure, Mr. Bakri — tap **${gateAction!.label}** below to submit this request. Your RM will contact you within 24 hours to finalize.`
+        : text;
+
       return {
-        reply: text,
+        reply: finalReply,
         tool_calls: toolCalls,
         stop_reason: response.stop_reason ?? 'end_turn',
         actions
