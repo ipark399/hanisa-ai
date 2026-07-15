@@ -176,7 +176,7 @@ export const TOOL_SCHEMAS: Anthropic.Tool[] = [
   // D2. Market context (judgment-assist, no predictions)
   {
     name: 'get_bloomberg_market_context',
-    description: 'Retrieve current market context — headline, article URL, article summary, publication timestamp, FX rate position, and historical percentile — to help user judgment. Cite the article URL / summary / published_at when the user asks about the source. Does NOT provide predictions.',
+    description: 'Retrieve current market context (news, FX rate position, historical percentile) to help user judgment. Does NOT provide predictions.',
     input_schema: {
       type: 'object',
       properties: {
