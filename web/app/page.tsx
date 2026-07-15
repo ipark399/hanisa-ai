@@ -290,7 +290,6 @@ export default function DemoPage() {
         })
     },
     show_loan_options: { act: 'act2', stepWithinAct: 2 }
-    // decline_fx / decline_flx — no advance (no-op).
   };
 
   async function handleAction(actionId: string, label?: string) {

@@ -165,8 +165,7 @@ Market context: EUR softened after ECB dovish remarks (Bloomberg). Current rate 
 
 Lock the rate now?`,
         actions: [
-          { label: 'Lock now', actionId: 'lock_fx_forward', variant: 'primary' },
-          { label: 'Not now', actionId: 'decline_fx', variant: 'danger' }
+          { label: 'Lock now', actionId: 'lock_fx_forward', variant: 'primary' }
         ],
         step: 2
       }
@@ -291,8 +290,7 @@ Estimated saving **MYR 1,064** vs spot.`,
 `Your projected balance dips below **MYR 5K** in 3 weeks. A pre-approved **FlexiCash line of MYR 65K** is available. Want to apply?`,
         actions: [
           { label: 'Apply', actionId: 'accept_preapproved_offer', variant: 'primary' },
-          { label: 'Show me options', actionId: 'show_loan_options' },
-          { label: 'Not now', actionId: 'decline_flx', variant: 'danger' }
+          { label: 'Show me options', actionId: 'show_loan_options' }
         ],
         step: 4
       }
