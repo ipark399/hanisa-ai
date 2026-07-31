@@ -33,7 +33,7 @@ export function runWithDemoAsOf<T>(asOfIso: string | undefined, fn: () => Promis
 // Demo state helper — all SQL queries should respect this "as of" timestamp.
 // Priority: per-request store (set by runWithDemoAsOf) > env var > Act 1 default.
 export function getDemoCurrentTimestamp(): string {
-  return asOfStore.getStore() ?? process.env.DEMO_INITIAL_TIMESTAMP ?? '2026-07-13T01:00:00Z';
+  return asOfStore.getStore() ?? process.env.DEMO_INITIAL_TIMESTAMP ?? '2026-07-31T01:00:00Z';
 }
 
 export const DEMO_CUSTOMER_ID = process.env.DEMO_CUSTOMER_ID || 'ahmad_01';

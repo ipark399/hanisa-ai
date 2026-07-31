@@ -43,7 +43,7 @@ export async function record_user_action(args: {
     const detailsObj = args.details ?? {};
     const eurAmount = Number(detailsObj.amount_eur ?? 8200);
     const rate = Number(detailsObj.rate ?? 4.95);
-    const valueDate = (detailsObj.value_date as string) ?? '2026-07-22';
+    const valueDate = (detailsObj.value_date as string) ?? '2026-08-09';
     const tradeRef = (detailsObj.trade_ref as string) ?? `FXFW-${new Date().getFullYear()}-${Math.floor(Math.random() * 9999)}`;
     await supabase.from('bank_scheduled_payments').insert({
       scheduled_payment_id: rid('sched_fx'),
