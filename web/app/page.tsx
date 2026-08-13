@@ -265,8 +265,8 @@ export default function DemoPage() {
           body: JSON.stringify({
             action_type: 'lock_fx_forward',
             referenced_entity_type: 'fx_opportunity',
-            referenced_entity_id: 'fx_opp_eval_2026-07-31',
-            details: { amount_eur: 8200, rate: 4.95, value_date: '2026-08-09' },
+            referenced_entity_id: 'fx_opp_eval_2026-08-14',
+            details: { amount_eur: 8200, rate: 4.95, value_date: '2026-08-23' },
             session_id: SESSION_ID,
             as_of_iso: asOfIso
           })
