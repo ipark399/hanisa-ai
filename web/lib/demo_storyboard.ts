@@ -330,14 +330,14 @@ Estimated saving **MYR 1,064** vs spot.`,
           { k: 'Offer ID', v: 'offer_flx_001' },
           { k: 'Amount', v: 'MYR 65,000' },
           { k: 'Rate', v: '6.5% p.a.' },
-          { k: 'Valid until', v: '2026-10-19' }
+          { k: 'Valid until', v: '2026-11-06' }
         ]
       }
     ],
     toolTrace: [
       { phase: 'read', table: 'infer_cashflow_projection', rowsRead: 1, toolCall: 'get_cashflow_projection(horizon_days=21)', rowPreview: [{ horizon_date: '2026-09-22', projected_mean_myr: 3200, p25: 1800, p75: 5000, confidence: 0.81 }] },
-      { phase: 'read', table: 'bank_preapproved_offers', rowsRead: 1, toolCall: "get_preapproved_offers(customer_id='ahmad_01', active_only=true)", rowPreview: [{ offer_id: 'offer_flx_001', amount_myr: 65000, rate_pa: 6.5, valid_until: '2026-10-19' }] },
-      { phase: 'read', table: 'bank_credit_limits', rowsRead: 1, toolCall: 'get_credit_limits(customer_id=ahmad_01)', rowPreview: [{ product: 'working_capital', limit: 100000, used: 60000, unused: 40000 }] },
+      { phase: 'read', table: 'bank_preapproved_offers', rowsRead: 1, toolCall: "get_preapproved_offers(customer_id='ahmad_01', active_only=true)", rowPreview: [{ offer_id: 'offer_flx_001', amount_myr: 65000, rate_pa: 6.5, valid_until: '2026-11-06' }] },
+      { phase: 'read', table: 'bank_credit_limits', rowsRead: 1, toolCall: 'get_credit_limits(customer_id=ahmad_01)', rowPreview: [{ product: 'working_capital', limit: 200000, used: 160000, unused: 40000 }] },
       { phase: 'reason', reasoning: 'check_flexicash_opportunity → TRUE: 21-day projection dips below MYR 5K AND active pre-approved FlexiCash offer.' },
       { phase: 'write', table: 'bank_interactions', rowsWritten: 1, reasoning: 'trigger event (type=flexicash_trigger_eval, result=fired)' }
     ]
