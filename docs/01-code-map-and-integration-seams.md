@@ -36,17 +36,17 @@ w04/                                   lines  role
 │   │   │                                     Free-QA sender, button handler. Replace this.
 │   │   ├── layout.tsx                   14   HTML shell.
 │   │   ├── globals.css                 636   WhatsApp-style theme.
-│   │   └── api/                              SERVER. Keep these; they are your integration surface.
+│   │   └── api/                              Server. Keep these; they are your integration surface.
 │   │       ├── chat/route.ts            81   POST /api/chat     — the agent (model loop)
 │   │       ├── action/route.ts          73   POST /api/action   — button side-effects (DB writes)
 │   │       ├── reset-demo/route.ts      91   POST /api/reset-demo — wipe demo residue
-│   │       └── triggers/route.ts        84   POST /api/triggers — debug only, UI never calls it
+│   │       └── triggers/route.ts        84   POST /api/triggers — debug only, front end never calls it
 │   ├── components/                           Presentational pieces used by page.tsx only.
 │   │   ├── Phone.tsx                    70   Chat column container
 │   │   ├── MessageBubble.tsx            67   One bubble; renders `actions[]` as buttons
 │   │   ├── FreeQAHistory.tsx            43   Free-QA turns list
 │   │   ├── ContextPanel.tsx            134   Right panel, 3 zones
-│   │   ├── SankeyTrace.tsx             265   Zone 3 — draws the step's SCRIPTED toolTrace
+│   │   ├── SankeyTrace.tsx             265   Zone 3 — draws the step's scripted toolTrace
 │   │   ├── ScenarioTabs.tsx             90   Act1 / Act2 / Free tabs
 │   │   └── DemoControls.tsx             88   Next ▶, Jump, Reset Act, Reset All, Reset DB
 │   ├── lib/                                  Server-side agent core (except demo_storyboard.ts)
@@ -56,7 +56,7 @@ w04/                                   lines  role
 │   │   ├── tool_schemas.ts             255   The 24 tool definitions the model sees
 │   │   ├── anthropic.ts                 27   SDK client, MODEL_ID, prompt-cache helper
 │   │   ├── supabase.ts                  39   DB client (service role) + the demo clock
-│   │   ├── demo_storyboard.ts          576   CLIENT data: 8 scripted steps, per-step asOfIso
+│   │   ├── demo_storyboard.ts          576   Client data: 8 scripted steps, per-step asOfIso
 │   │   └── tools/                            23 handlers = what the model can actually do
 │   │       ├── index.ts                 58   TOOL_HANDLERS registry + dispatchTool()
 │   │       ├── balance.ts               48   get_current_balance, get_account_list
@@ -69,7 +69,7 @@ w04/                                   lines  role
 │   │       ├── bloomberg.ts             69   get_bloomberg_market_context
 │   │       ├── triggers.ts             153   check_monday_brief, check_fx_opportunity,
 │   │       │                                 check_flexicash_opportunity
-│   │       └── actions.ts              191   record_user_action, record_learning_event  (WRITE)
+│   │       └── actions.ts              191   record_user_action, record_learning_event  (writes)
 │   ├── tests/e2e/cimb-cfo-agent.spec.ts 210  Playwright, runs against the deployed URL
 │   ├── playwright.config.ts             23
 │   ├── package.json                     37
@@ -149,10 +149,10 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ platform · always on ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
 ┆ LLM     Anthropic API direct · prompt cache on persona prefix · no gateway · no rate limit · no cost  ┆
-┆ Audit   every user / agent turn → bank_interactions · tool_calls[] returned to UI, not persisted     ┆
+┆ Audit   every user / agent turn → bank_interactions · tool_calls[] returned to page, not persisted   ┆
 ┆ Hosting Vercel (web) · Supabase free tier — pauses after 7 idle days · service-role key · no RLS     ┆
 └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
-· 1 loop, not 3 tiers · one session · one customer · demo clock per step · scripted + improvised · evals by hand
+· 1 loop, not 3 tiers · one session · one customer · demo clock per step · scripted + improvised · evaluation by hand
 ```
 
 Three things to read off it:
@@ -173,19 +173,19 @@ Request:
 
 ```jsonc
 {
-  "messages": [                       // REQUIRED. The conversation so far, oldest first.
+  "messages": [                       // Required. The conversation so far, oldest first.
     { "role": "user",      "content": "Has Café Lumière been late before?" },
     { "role": "assistant", "content": "…previous agent reply…" },
     { "role": "user",      "content": "show me their transactions" }
   ],
   "session_id": "demo_session_001",  // optional; only stamped onto bank_interactions rows
-  "step_context": {                   // optional but in practice REQUIRED for correct answers
+  "step_context": {                   // optional, but required for correct answers
     "activeMode": "act1",             // "intro" | "act1" | "act2" | "free"
     "stepWithinAct": 1,               // omit in free mode
     "timeStamp": "Fri 14 Aug · 09:00",// display label; goes into the system prompt as-is
     "narrative": "Monday morning brief fires automatically.",
     "recentPushText": "Good morning, Mr. Bakri. …",   // the push currently on screen
-    "asOfIso": "2026-08-14T01:00:00Z" // THE DEMO CLOCK. Tools filter lte(this date).
+    "asOfIso": "2026-08-14T01:00:00Z" // the demo clock. Tools filter lte(this date).
   }
 }
 ```
@@ -256,7 +256,7 @@ Side effects by `action_type` (`lib/tools/actions.ts`):
 | `accept_preapproved_offer` | `bank_preapproved_offers` → `accepted`; `bank_products_held` + `bank_credit_limits` (1 row each, `pending_rm_review`) | amount, currency and rate are read from the offer row (`offer_terms.interest_rate_pa`) |
 | `decline_offer` | interaction row only | `confirmation_message` = one-sentence acknowledgement |
 
-Nothing here is "activated". Every business row lands as `pending_rm_review`; the narrative is that a relationship manager finalises it.
+Nothing here is "activated". Every business row lands as `pending_rm_review`; a relationship manager finalises it outside the agent.
 
 ### 3.3 `POST /api/reset-demo` — clean up between runs
 
@@ -272,7 +272,7 @@ Deletes rows whose ids start with `ph_flx_`, `cl_flx_`, `sched_fx_`, `int_`, `pr
 
 ### 3.4 `POST /api/triggers` — debug
 
-`{ "trigger": "monday_brief" | "fx" | "flexicash" }` → `{ "fires": bool, "payload": {…}, "message": "…" }`. Evaluates one trigger and asks the model to phrase the push. **The front end does not call this**; the storyboard hard-codes the push text. It has no `asOfIso` plumbing, so it evaluates at the env-default clock. Useful for checking trigger logic, not for the demo.
+`{ "trigger": "monday_brief" | "fx" | "flexicash" }` → `{ "fires": bool, "payload": {…}, "message": "…" }`. Evaluates one trigger and asks the model to phrase the push. **The front end does not call this**; the storyboard hard-codes the push text. It does not accept `asOfIso`, so it evaluates at the environment-default clock. Useful for checking trigger logic, not for the demo.
 
 ---
 
@@ -282,13 +282,13 @@ If you replace `page.tsx`, this is the behaviour that lives there and nowhere el
 
 | # | Behaviour | Where | Keep? |
 |---|---|---|---|
-| F1 | The 8-step script: text, timestamps, `asOfIso`, action buttons, right-panel content | `lib/demo_storyboard.ts` `STEPS[]` | Yes — this **is** the demo. Port the data, not the React. |
+| F1 | The 8-step script: text, timestamps, `asOfIso`, action buttons, right-panel content | `lib/demo_storyboard.ts` `STEPS[]` | Yes — this **is** the demo. Port the data, not the React code. |
 | F2 | Clock threading: send `STEPS[n].asOfIso` as `step_context.asOfIso` on every `/api/chat`, and as `as_of_iso` on `/api/action` | `page.tsx` `handleSendMessage`, `STORYBOARD_ACTION_MAP.apiCall` | Yes, non-negotiable |
 | F3 | History policy: `messages` = Free-QA turns only; current push goes in `recentPushText` | `page.tsx` `freeQAHistory` | Yes |
 | F4 | Button routing: `STORYBOARD_ACTION_MAP` maps 3 ids to (act, step, optional API call); any other `action_id` (i.e. model-suggested) becomes a Free-QA message `"Please walk me through: <label>."` | `page.tsx` `handleAction` | Yes for the 3 mapped ids; the fallback phrasing may be changed |
-| F5 | Rendering `actions[]` from `/api/chat` as tappable buttons inside the reply bubble | `MessageBubble.tsx` | Yes, or model-suggested buttons vanish |
+| F5 | Rendering `actions[]` from `/api/chat` as tappable buttons inside the reply bubble | `MessageBubble.tsx` | Yes, or model-suggested buttons never appear |
 | F6 | Disabling a button after one tap | `page.tsx` `disabledActions` | Recommended; the server does not de-duplicate |
-| F7 | Reset Act / Reset All (client state) and Reset DB (`/api/reset-demo`) | `DemoControls.tsx` | Reset DB yes; the other two are client concerns |
+| F7 | Reset Act / Reset All (client state) and Reset DB (`/api/reset-demo`) | `DemoControls.tsx` | Reset DB yes; the other two are front-end state |
 | F8 | Right panel Zone 3 "Tool & DB Trace" — drawn from `STEPS[n].toolTrace`, a **scripted** array. The real `tool_calls[]` from `/api/chat` is not used | `SankeyTrace.tsx` | Decide. Wiring it to the real `tool_calls[]` would show the calls actually made. |
 | F9 | `SESSION_ID = "demo_session_001"` constant | `page.tsx` | Decide. Replace with an id per browser session if two people may demo at once — but the DB still holds one customer's state, so concurrent runs will still collide on `reset-demo` and pending rows |
 
@@ -311,7 +311,7 @@ Everything the agent *is* sits in five files under `web/lib/`. They are intentio
 
 One exported string, 56 lines, cached as a prompt prefix. Sections: Tone and Style · Push vs Pull · Tool Use · Recommendation Rules · Compliance · Learning Behaviour · Identity. Edit text, redeploy.
 
-Caution: several behaviours the demo relies on are enforced **only** here — "paraphrase, ask, commit only after the user confirms", the "Informational. Subject to product terms and approval." footer, "do not invent figures". Five attempts to add stricter rules regressed other answers and were rolled back; change one rule at a time and re-run the scripted questions in `docs/demo/`.
+Caution: several behaviours the demo relies on are enforced **only** here — "paraphrase, ask, commit only after the user confirms", the "Informational. Subject to product terms and approval." footer, "do not invent figures". Adding a stricter rule here has changed other answers before; change one rule at a time and re-run the scripted questions in `docs/demo/`.
 
 ### 5.2 `tool_schemas.ts` + `tools/index.ts` + `tools/*.ts` — what the agent can do
 
@@ -323,7 +323,7 @@ tools/index.ts    TOOL_HANDLERS = { get_x, … }                    ← name →
 tools/<file>.ts   export async function get_x(args) { … }         ← does the work
 ```
 
-**Recipe — add a tool.** (1) Write the handler in the right `tools/*.ts`; read the clock with `getDemoCurrentTimestamp()` and filter `lte(asOf)`. (2) Register it in `TOOL_HANDLERS`. (3) Add its schema to `TOOL_SCHEMAS`. Return plain JSON; the loop serialises it for the model. Throwing is safe — `dispatchTool` returns `{ error: "tool_execution_failed" }` to the model instead of crashing the request.
+**Recipe — add a tool.** (1) Write the handler in the right `tools/*.ts`; read the clock with `getDemoCurrentTimestamp()` and filter `lte(asOf)`. (2) Register it in `TOOL_HANDLERS`. (3) Add its schema to `TOOL_SCHEMAS`. Return plain JSON; the loop serialises it for the model. An exception is safe — `dispatchTool` returns `{ error: "tool_execution_failed" }` to the model instead of crashing the request.
 
 **Recipe — remove a tool.** Delete the schema entry. The handler can stay; the model cannot call what it cannot see.
 
@@ -331,9 +331,9 @@ Special cases: `suggest_action` has a schema but no handler — `chat_loop.ts` i
 
 ### 5.3 `chat_loop.ts` — how a turn runs
 
-Knobs, with current values:
+Settings, with current values:
 
-| knob | value | line |
+| setting | value | line |
 |---|---|---|
 | `MAX_TOOL_LOOPS` | 6 | 12 |
 | `max_tokens` per model call | 2048 | 161 |
@@ -380,12 +380,12 @@ Creates the `@supabase/supabase-js` client with the **service-role** key (bypass
 
 ## 7. Known issues you will meet in the first week
 
-1. **The Sankey panel is scripted** (F8). Don't demo it as "live tool calls" unless you wire it to `tool_calls[]`.
+1. **The Sankey panel is scripted** (F8). Do not present it as "live tool calls" unless you wire it to `tool_calls[]`.
 2. **The model can write.** `record_user_action` is callable by the model; the RM gate changes the reply text, not the tool call. Rows land as `pending_rm_review`, so nothing is "executed", but audit it.
 3. **The RM gate regexes are Claude-specific.** A different model's phrasing may fail to match them, or match when it should not.
 4. **One shared session, one customer.** Two simultaneous demos overwrite each other's pending rows and reset each other.
 5. **Playwright asserts display dates** (`Jul …`) from an earlier data shift; 6 of 9 tests fail until the assertions read from `STEPS[]`.
-6. **Data is dated.** Every table is anchored to Act 1 = 2026-08-14 / Act 2 = 2026-09-01. `scripts/shift_demo_dates.mjs <days>` moves it; the four code files that carry literal dates are listed in `docs/04-runbook.md`.
+6. **Data is anchored to fixed dates.** Every table is anchored to Act 1 = 2026-08-14 / Act 2 = 2026-09-01. `scripts/shift_demo_dates.mjs <days>` moves it; the four code files that carry literal dates are listed in `docs/04-runbook.md`.
 7. **The `/api/action` confirmation text costs one model call whose result the front end does not use.** Delete the call or use the text.
 
 ---
@@ -420,7 +420,7 @@ flowchart LR
     A["/api/action<br/>record_user_action()"]:::server
     C["/api/chat<br/>runChat() · chat_loop.ts"]:::server
     R["/api/reset-demo"]:::server
-    T["/api/triggers<br/>debug, UI never calls"]:::server
+    T["/api/triggers<br/>debug, front end never calls"]:::server
     CLK["runWithDemoAsOf(asOfIso)<br/>AsyncLocalStorage clock"]:::server
     A --- CLK
     C --- CLK
@@ -446,14 +446,14 @@ flowchart LR
 %%{init: {"themeVariables": {"fontSize": "18px"}, "sequence": {"actorFontSize": 18, "messageFontSize": 16, "noteFontSize": 16, "width": 190, "height": 52, "boxMargin": 12, "messageMargin": 40}}}%%
 sequenceDiagram
   autonumber
-  participant UI as page.tsx
+  participant FE as page.tsx
   participant API as /api/chat
   participant Loop as runChat()
   participant LLM as Claude
   participant Tools as lib/tools
   participant DB as Postgres
 
-  UI->>API: POST {messages (Free-QA only), session_id, step_context{asOfIso, recentPushText…}}
+  FE->>API: POST {messages (Free-QA only), session_id, step_context{asOfIso, recentPushText…}}
   API->>API: runWithDemoAsOf(asOfIso)
   API->>DB: INSERT bank_interactions (user turn)
   API->>Loop: runChat(history, step_context)
@@ -477,8 +477,8 @@ sequenceDiagram
   end
   Loop-->>API: {reply, tool_calls[], actions[], stop_reason}
   API->>DB: INSERT bank_interactions (agent turn)
-  API-->>UI: JSON
-  UI->>UI: render reply · actions[] as buttons · append to freeQAHistory
+  API-->>FE: JSON
+  FE->>FE: render reply · actions[] as buttons · append to freeQAHistory
 ```
 
 ### 8.3 Storyboard state machine

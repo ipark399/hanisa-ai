@@ -235,17 +235,17 @@
 │   │   │                                     <span class="role">Free-QA sender, button handler. Replace this.</span>
 │   │   ├── layout.tsx                   14   <span class="role">HTML shell.</span>
 │   │   ├── globals.css                 636   <span class="role">WhatsApp-style theme.</span>
-│   │   └── api/                              <span class="role">SERVER. Keep these; they are your integration surface.</span>
+│   │   └── api/                              <span class="role">Server. Keep these; they are your integration surface.</span>
 │   │       ├── chat/route.ts            81   <span class="role">POST /api/chat       — the agent (model loop)</span>
 │   │       ├── action/route.ts          73   <span class="role">POST /api/action     — button side-effects (DB writes)</span>
 │   │       ├── reset-demo/route.ts      91   <span class="role">POST /api/reset-demo — wipe demo residue</span>
-│   │       └── triggers/route.ts        84   <span class="role">POST /api/triggers   — debug only, UI never calls it</span>
+│   │       └── triggers/route.ts        84   <span class="role">POST /api/triggers   — debug only, front end never calls it</span>
 │   ├── <span class="hot">components/</span>                           <span class="role">Presentational pieces used by page.tsx only.</span>
 │   │   ├── Phone.tsx                    70   <span class="role">Chat column container</span>
 │   │   ├── MessageBubble.tsx            67   <span class="role">One bubble; renders `actions[]` as buttons</span>
 │   │   ├── FreeQAHistory.tsx            43   <span class="role">Free-QA turns list</span>
 │   │   ├── ContextPanel.tsx            134   <span class="role">Right panel, 3 zones</span>
-│   │   ├── SankeyTrace.tsx             265   <span class="role">Zone 3 — draws the step's SCRIPTED toolTrace</span>
+│   │   ├── SankeyTrace.tsx             265   <span class="role">Zone 3 — draws the step's scripted toolTrace</span>
 │   │   ├── ScenarioTabs.tsx             90   <span class="role">Act1 / Act2 / Free tabs</span>
 │   │   └── DemoControls.tsx             88   <span class="role">Next ▶, Jump, Reset Act, Reset All, Reset DB</span>
 │   ├── lib/                                  <span class="role">Server-side agent core (except demo_storyboard.ts)</span>
@@ -255,7 +255,7 @@
 │   │   ├── tool_schemas.ts             255   <span class="role">The 24 tool definitions the model sees</span>
 │   │   ├── anthropic.ts                 27   <span class="role">SDK client, MODEL_ID, prompt-cache helper</span>
 │   │   ├── supabase.ts                  39   <span class="role">DB client (service role) + the demo clock</span>
-│   │   ├── <span class="hot">demo_storyboard.ts</span>          576   <span class="role">CLIENT data: 8 scripted steps, per-step asOfIso</span>
+│   │   ├── <span class="hot">demo_storyboard.ts</span>          576   <span class="role">Client data: 8 scripted steps, per-step asOfIso</span>
 │   │   └── tools/                            <span class="role">23 handlers = what the model can actually do</span>
 │   │       ├── index.ts                 58   <span class="role">TOOL_HANDLERS registry + dispatchTool()</span>
 │   │       ├── balance.ts               48   <span class="role">get_current_balance, get_account_list</span>
@@ -268,7 +268,7 @@
 │   │       ├── bloomberg.ts             69   <span class="role">get_bloomberg_market_context</span>
 │   │       ├── triggers.ts             153   <span class="role">check_monday_brief, check_fx_opportunity,</span>
 │   │       │                                 <span class="role">check_flexicash_opportunity</span>
-│   │       └── actions.ts              191   <span class="role">record_user_action, record_learning_event  (WRITE)</span>
+│   │       └── actions.ts              191   <span class="role">record_user_action, record_learning_event  (writes)</span>
 │   ├── tests/e2e/cimb-cfo-agent.spec.ts 210  <span class="role">Playwright, runs against the deployed URL</span>
 │   ├── playwright.config.ts             23
 │   ├── package.json                     37
@@ -345,10 +345,10 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ platform · always on ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
 ┆ LLM     Anthropic API direct · prompt cache on persona prefix · no gateway · no rate limit · no cost  ┆
-┆ Audit   every user / agent turn → bank_interactions · tool_calls[] returned to UI, not persisted     ┆
+┆ Audit   every user / agent turn → bank_interactions · tool_calls[] returned to page, not persisted   ┆
 ┆ Hosting Vercel (web) · Supabase free tier — pauses after 7 idle days · service-role key · no RLS     ┆
 └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
-· 1 loop, not 3 tiers · one session · one customer · demo clock per step · scripted + improvised · evals by hand</pre></div>
+· 1 loop, not 3 tiers · one session · one customer · demo clock per step · scripted + improvised · evaluation by hand</pre></div>
       <p>Three things to read off it:</p>
       <ol>
         <li><strong>The PLANNING layer is three functions, not three agents.</strong> There is no delegation; <code>chat_loop.ts</code> calls them as tools. Hence "1 loop, not 3 tiers".</li>
@@ -364,19 +364,19 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
       <h3>3.1 <code>POST /api/chat</code> — talk to the agent</h3>
       <p>Request:</p>
 <pre><code>{
-  <span class="k">"messages"</span>: [                       <span class="c">// REQUIRED. The conversation so far, oldest first.</span>
+  <span class="k">"messages"</span>: [                       <span class="c">// Required. The conversation so far, oldest first.</span>
     { "role": "user",      "content": "Has Café Lumière been late before?" },
     { "role": "assistant", "content": "…previous agent reply…" },
     { "role": "user",      "content": "show me their transactions" }
   ],
   <span class="k">"session_id"</span>: "demo_session_001",  <span class="c">// optional; only stamped onto bank_interactions rows</span>
-  <span class="k">"step_context"</span>: {                   <span class="c">// optional but in practice REQUIRED for correct answers</span>
+  <span class="k">"step_context"</span>: {                   <span class="c">// optional, but required for correct answers</span>
     "activeMode": "act1",             <span class="c">// "intro" | "act1" | "act2" | "free"</span>
     "stepWithinAct": 1,               <span class="c">// omit in free mode</span>
     "timeStamp": "Fri 14 Aug · 09:00",<span class="c">// display label; goes into the system prompt as-is</span>
     "narrative": "Monday morning brief fires automatically.",
     "recentPushText": "Good morning, Mr. Bakri. …",   <span class="c">// the push currently on screen</span>
-    <span class="em">"asOfIso": "2026-08-14T01:00:00Z"</span> <span class="c">// THE DEMO CLOCK. Tools filter lte(this date).</span>
+    <span class="em">"asOfIso": "2026-08-14T01:00:00Z"</span> <span class="c">// the demo clock. Tools filter lte(this date).</span>
   }
 }</code></pre>
       <p>Response:</p>
@@ -432,7 +432,7 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
           <tr><td><code>decline_offer</code></td><td>interaction row only</td><td><code>confirmation_message</code> = one-sentence acknowledgement</td></tr>
         </tbody>
       </table></div>
-      <p>Nothing here is "activated". Every business row lands as <code>pending_rm_review</code>; the narrative is that a relationship manager finalises it.</p>
+      <p>Nothing here is "activated". Every business row lands as <code>pending_rm_review</code>; a relationship manager finalises it outside the agent.</p>
 
       <h3>3.3 <code>POST /api/reset-demo</code> — clean up between runs</h3>
       <p>No body. Response:</p>
@@ -442,7 +442,7 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
       <p>Deletes rows whose ids start with <code>ph_flx_</code>, <code>cl_flx_</code>, <code>sched_fx_</code>, <code>int_</code>, <code>pref_</code>, <code>le_</code>; deletes any <code>pending_rm_review</code> row in three tables; sets <code>offer_flx_001</code> back to <code>open</code>. Seed rows (non-prefixed ids) are untouched. Idempotent — call it before every run.</p>
 
       <h3>3.4 <code>POST /api/triggers</code> — debug</h3>
-      <p><code>{ "trigger": "monday_brief" | "fx" | "flexicash" }</code> → <code>{ "fires": bool, "payload": {…}, "message": "…" }</code>. Evaluates one trigger and asks the model to phrase the push. <strong>The front end does not call this</strong>; the storyboard hard-codes the push text. It has no <code>asOfIso</code> plumbing, so it evaluates at the env-default clock. Useful for checking trigger logic, not for the demo.</p>
+      <p><code>{ "trigger": "monday_brief" | "fx" | "flexicash" }</code> → <code>{ "fires": bool, "payload": {…}, "message": "…" }</code>. Evaluates one trigger and asks the model to phrase the push. <strong>The front end does not call this</strong>; the storyboard hard-codes the push text. It does not accept <code>asOfIso</code>, so it evaluates at the environment-default clock. Useful for checking trigger logic, not for the demo.</p>
     </section>
 
     <section id="s4">
@@ -451,13 +451,13 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
       <div class="tablewrap"><table>
         <thead><tr><th>#</th><th>Behaviour</th><th>Where</th><th>Keep?</th></tr></thead>
         <tbody>
-          <tr><td>F1</td><td>The 8-step script: text, timestamps, <code>asOfIso</code>, action buttons, right-panel content</td><td><code>lib/demo_storyboard.ts</code> <code>STEPS[]</code></td><td><span class="pill keep">keep</span> This <strong>is</strong> the demo. Port the data, not the React.</td></tr>
+          <tr><td>F1</td><td>The 8-step script: text, timestamps, <code>asOfIso</code>, action buttons, right-panel content</td><td><code>lib/demo_storyboard.ts</code> <code>STEPS[]</code></td><td><span class="pill keep">keep</span> This <strong>is</strong> the demo. Port the data, not the React code.</td></tr>
           <tr><td>F2</td><td>Clock threading: send <code>STEPS[n].asOfIso</code> as <code>step_context.asOfIso</code> on every <code>/api/chat</code>, and as <code>as_of_iso</code> on <code>/api/action</code></td><td><code>page.tsx</code> <code>handleSendMessage</code>, <code>STORYBOARD_ACTION_MAP.apiCall</code></td><td><span class="pill keep">keep</span> non-negotiable</td></tr>
           <tr><td>F3</td><td>History policy: <code>messages</code> = Free-QA turns only; current push goes in <code>recentPushText</code></td><td><code>page.tsx</code> <code>freeQAHistory</code></td><td><span class="pill keep">keep</span></td></tr>
           <tr><td>F4</td><td>Button routing: <code>STORYBOARD_ACTION_MAP</code> maps 3 ids to (act, step, optional API call); any other <code>action_id</code> (i.e. model-suggested) becomes a Free-QA message <code>"Please walk me through: &lt;label&gt;."</code></td><td><code>page.tsx</code> <code>handleAction</code></td><td><span class="pill keep">keep</span> for the 3 mapped ids; the fallback phrasing may be changed</td></tr>
-          <tr><td>F5</td><td>Rendering <code>actions[]</code> from <code>/api/chat</code> as tappable buttons inside the reply bubble</td><td><code>MessageBubble.tsx</code></td><td><span class="pill keep">keep</span> or model-suggested buttons vanish</td></tr>
+          <tr><td>F5</td><td>Rendering <code>actions[]</code> from <code>/api/chat</code> as tappable buttons inside the reply bubble</td><td><code>MessageBubble.tsx</code></td><td><span class="pill keep">keep</span> or model-suggested buttons never appear</td></tr>
           <tr><td>F6</td><td>Disabling a button after one tap</td><td><code>page.tsx</code> <code>disabledActions</code></td><td><span class="pill rec">recommended</span> the server does not de-duplicate</td></tr>
-          <tr><td>F7</td><td>Reset Act / Reset All (client state) and Reset DB (<code>/api/reset-demo</code>)</td><td><code>DemoControls.tsx</code></td><td><span class="pill keep">keep</span> Reset DB; the other two are client concerns</td></tr>
+          <tr><td>F7</td><td>Reset Act / Reset All (client state) and Reset DB (<code>/api/reset-demo</code>)</td><td><code>DemoControls.tsx</code></td><td><span class="pill keep">keep</span> Reset DB; the other two are front-end state</td></tr>
           <tr><td>F8</td><td>Right panel Zone 3 "Tool &amp; DB Trace" — drawn from <code>STEPS[n].toolTrace</code>, a <strong>scripted</strong> array. The real <code>tool_calls[]</code> from <code>/api/chat</code> is not used</td><td><code>SankeyTrace.tsx</code></td><td><span class="pill your">decide</span> Wiring it to the real <code>tool_calls[]</code> would show the calls actually made.</td></tr>
           <tr><td>F9</td><td><code>SESSION_ID = "demo_session_001"</code> constant</td><td><code>page.tsx</code></td><td><span class="pill your">decide</span> Replace with an id per browser session if two people may demo at once — but the DB still holds one customer's state, so concurrent runs will still collide on <code>reset-demo</code> and pending rows</td></tr>
         </tbody>
@@ -475,21 +475,21 @@ show_loan_options        → act2, step 2, <span class="c">no API call</span></c
 
       <h3>5.1 <code>persona.ts</code> — what the agent is like</h3>
       <p>One exported string, 56 lines, cached as a prompt prefix. Sections: Tone and Style · Push vs Pull · Tool Use · Recommendation Rules · Compliance · Learning Behaviour · Identity. Edit text, redeploy.</p>
-      <p><strong>Caution.</strong> Several behaviours the demo relies on are enforced <strong>only</strong> here — "paraphrase, ask, commit only after the user confirms", the "Informational. Subject to product terms and approval." footer, "do not invent figures". Five attempts to add stricter rules regressed other answers and were rolled back; change one rule at a time and re-run the scripted questions in <code>docs/demo/</code>.</p>
+      <p><strong>Caution.</strong> Several behaviours the demo relies on are enforced <strong>only</strong> here — "paraphrase, ask, commit only after the user confirms", the "Informational. Subject to product terms and approval." footer, "do not invent figures". Adding a stricter rule here has changed other answers before; change one rule at a time and re-run the scripted questions in <code>docs/demo/</code>.</p>
 
       <h3>5.2 <code>tool_schemas.ts</code> + <code>tools/index.ts</code> + <code>tools/*.ts</code> — what the agent can do</h3>
       <p>Three places must agree on a tool's name:</p>
 <pre><code>tool_schemas.ts   { name: 'get_x', description, input_schema }   <span class="c">← the model sees this</span>
 tools/index.ts    TOOL_HANDLERS = { get_x, … }                    <span class="c">← name → function</span>
 tools/&lt;file&gt;.ts   export async function get_x(args) { … }         <span class="c">← does the work</span></code></pre>
-      <p class="recipe"><span>Recipe</span><strong>Add a tool.</strong> (1) Write the handler in the right <code>tools/*.ts</code>; read the clock with <code>getDemoCurrentTimestamp()</code> and filter <code>lte(asOf)</code>. (2) Register it in <code>TOOL_HANDLERS</code>. (3) Add its schema to <code>TOOL_SCHEMAS</code>. Return plain JSON; the loop serialises it for the model. Throwing is safe — <code>dispatchTool</code> returns <code>{ error: "tool_execution_failed" }</code> to the model instead of crashing the request.</p>
+      <p class="recipe"><span>Recipe</span><strong>Add a tool.</strong> (1) Write the handler in the right <code>tools/*.ts</code>; read the clock with <code>getDemoCurrentTimestamp()</code> and filter <code>lte(asOf)</code>. (2) Register it in <code>TOOL_HANDLERS</code>. (3) Add its schema to <code>TOOL_SCHEMAS</code>. Return plain JSON; the loop serialises it for the model. An exception is safe — <code>dispatchTool</code> returns <code>{ error: "tool_execution_failed" }</code> to the model instead of crashing the request.</p>
       <p class="recipe"><span>Recipe</span><strong>Remove a tool.</strong> Delete the schema entry. The handler can stay; the model cannot call what it cannot see.</p>
       <p><strong>Special cases.</strong> <code>suggest_action</code> has a schema but no handler — <code>chat_loop.ts</code> intercepts it. <code>record_user_action</code> and <code>record_learning_event</code> <strong>write</strong>; the model can call them. If your platform must not let the model write, remove their schemas and keep the writes behind <code>/api/action</code>.</p>
 
       <h3>5.3 <code>chat_loop.ts</code> — how a turn runs</h3>
-      <p>Knobs, with current values:</p>
+      <p>Settings, with current values:</p>
       <div class="tablewrap"><table>
-        <thead><tr><th>knob</th><th>value</th><th class="num">line</th></tr></thead>
+        <thead><tr><th>setting</th><th>value</th><th class="num">line</th></tr></thead>
         <tbody>
           <tr><td><code>MAX_TOOL_LOOPS</code></td><td>6</td><td class="num">12</td></tr>
           <tr><td><code>max_tokens</code> per model call</td><td>2048</td><td class="num">161</td></tr>
@@ -533,12 +533,12 @@ tools/&lt;file&gt;.ts   export async function get_x(args) { … }         <span 
     <section id="s7">
       <h2><span class="n">07</span><span>Known issues you will meet in the first week</span></h2>
       <ol class="gotchas">
-        <li><span><strong>The Sankey panel is scripted</strong> (F8). Don't demo it as "live tool calls" unless you wire it to <code>tool_calls[]</code>.</span></li>
+        <li><span><strong>The Sankey panel is scripted</strong> (F8). Do not present it as "live tool calls" unless you wire it to <code>tool_calls[]</code>.</span></li>
         <li><span><strong>The model can write.</strong> <code>record_user_action</code> is callable by the model; the RM gate changes the reply text, not the tool call. Rows land as <code>pending_rm_review</code>, so nothing is "executed", but audit it.</span></li>
         <li><span><strong>The RM gate regexes are Claude-specific.</strong> A different model's phrasing may fail to match them, or match when it should not.</span></li>
         <li><span><strong>One shared session, one customer.</strong> Two simultaneous demos overwrite each other's pending rows and reset each other.</span></li>
         <li><span><strong>Playwright asserts display dates</strong> (<code>Jul …</code>) from an earlier data shift; 6 of 9 tests fail until the assertions read from <code>STEPS[]</code>.</span></li>
-        <li><span><strong>Data is dated.</strong> Every table is anchored to Act 1 = 2026-08-14 / Act 2 = 2026-09-01. <code>scripts/shift_demo_dates.mjs &lt;days&gt;</code> moves it; the four code files that carry literal dates are listed in <code>docs/04-runbook.md</code>.</span></li>
+        <li><span><strong>Data is anchored to fixed dates.</strong> Every table is anchored to Act 1 = 2026-08-14 / Act 2 = 2026-09-01. <code>scripts/shift_demo_dates.mjs &lt;days&gt;</code> moves it; the four code files that carry literal dates are listed in <code>docs/04-runbook.md</code>.</span></li>
         <li><span><strong>The <code>/api/action</code> confirmation text costs one model call whose result the front end does not use.</strong> Delete the call or use the text.</span></li>
       </ol>
     </section>
@@ -572,7 +572,7 @@ flowchart LR
     A["/api/action<br/>record_user_action()"]:::server
     C["/api/chat<br/>runChat() · chat_loop.ts"]:::server
     R["/api/reset-demo"]:::server
-    T["/api/triggers<br/>debug, UI never calls"]:::server
+    T["/api/triggers<br/>debug, front end never calls"]:::server
     CLK["runWithDemoAsOf(asOfIso)<br/>AsyncLocalStorage clock"]:::server
     A --- CLK
     C --- CLK
@@ -597,14 +597,14 @@ flowchart LR
 %%{init: {"themeVariables": {"fontSize": "18px"}, "sequence": {"actorFontSize": 18, "messageFontSize": 16, "noteFontSize": 16, "width": 190, "height": 52, "boxMargin": 12, "messageMargin": 40}}}%%
 sequenceDiagram
   autonumber
-  participant UI as page.tsx
+  participant FE as page.tsx
   participant API as /api/chat
   participant Loop as runChat()
   participant LLM as Claude
   participant Tools as lib/tools
   participant DB as Postgres
 
-  UI->>API: POST {messages (Free-QA only), session_id, step_context{asOfIso, recentPushText…}}
+  FE->>API: POST {messages (Free-QA only), session_id, step_context{asOfIso, recentPushText…}}
   API->>API: runWithDemoAsOf(asOfIso)
   API->>DB: INSERT bank_interactions (user turn)
   API->>Loop: runChat(history, step_context)
@@ -628,8 +628,8 @@ sequenceDiagram
   end
   Loop-->>API: {reply, tool_calls[], actions[], stop_reason}
   API->>DB: INSERT bank_interactions (agent turn)
-  API-->>UI: JSON
-  UI->>UI: render reply · actions[] as buttons · append to freeQAHistory
+  API-->>FE: JSON
+  FE->>FE: render reply · actions[] as buttons · append to freeQAHistory
       </pre></div>
 
       <h3>8.3 Storyboard state machine</h3>
@@ -785,7 +785,7 @@ erDiagram
         <tbody>
           <tr><td><strong>Every figure traces to a system of record</strong></td><td>The model never produces a number itself. All 23 tool handlers read rows from the database and return them; the model reasons over what it was handed. Each turn returns <code>tool_calls[]</code> — the tools it ran, with inputs and results — so the chain from answer back to data is visible.</td><td><code>lib/tools/*.ts</code> · persona "Do not invent figures" · <code>/api/chat</code> response</td></tr>
           <tr><td><strong>Bank-owned facts and machine inferences are kept apart</strong></td><td>Fifteen <code>bank_*</code> tables hold what core banking would own (transactions are immutable; corrections are reversal rows). Ten <code>infer_*</code> tables hold what the agent derived, and every derived row carries <code>confidence</code>, <code>inferred_by</code>, <code>inferred_at</code> and <code>evidence_source</code>. An auditor can ask "where did this come from" of any figure and get a column, not a conversation.</td><td><code>supabase/migrations/0001_initial_schema.sql</code></td></tr>
-          <tr><td><strong>The system cannot execute a transaction</strong></td><td>There is no execution path. A Lock or an Apply writes a row whose status is <code>pending_rm_review</code>; a relationship manager finalises it outside the agent. If the model's reply claims completion ("activated", a made-up reference number), a code gate replaces the sentence with a fixed "your RM will contact you" message. The build removed a model-written confirmation for FX locks after it fabricated reference numbers.</td><td><code>lib/tools/actions.ts</code> · <code>lib/chat_loop.ts</code> RM gate · <code>app/api/action/route.ts</code></td></tr>
+          <tr><td><strong>The system cannot execute a transaction</strong></td><td>There is no execution path. A Lock or an Apply writes a row whose status is <code>pending_rm_review</code>; a relationship manager finalises it outside the agent. If the model's reply claims completion ("activated", an invented reference number), a code gate replaces the sentence with a fixed "your RM will contact you" message. The build removed a model-written confirmation for FX locks after it fabricated reference numbers.</td><td><code>lib/tools/actions.ts</code> · <code>lib/chat_loop.ts</code> RM gate · <code>app/api/action/route.ts</code></td></tr>
           <tr><td><strong>It informs; it does not advise</strong></td><td>The persona forbids definitive language ("you should", "the best product"), frames every recommendation as an option for consideration, and closes product messages with "Informational. Subject to product terms and approval." This follows Bank Negara Malaysia's informational-guidance norms.</td><td><code>lib/persona.ts</code> §Compliance, §Recommendation Rules</td></tr>
           <tr><td><strong>Products are matched to the customer's tier</strong></td><td>Each catalogue product carries the SME maturity tier range it is designed for (1–5, CIMB's SME maturity model). The customer's inferred tier (4) filters the recommendation set before the model sees it, so a product outside the band is never offered. This is a suitability control implemented as a query filter, not as a prompt instruction.</td><td><code>bank_product_catalog.min/max_complexity_level</code> · <code>find_products_by_use_case</code></td></tr>
           <tr><td><strong>Learning about the customer leaves a consent trail</strong></td><td>When the customer states a preference, the agent paraphrases, asks, and records only after confirmation. The record lands in an audit table with a <code>confirmed_by_user</code> flag and the interaction it came from, and the schema carries a <code>reverted_at</code> for withdrawal.</td><td><code>infer_learning_events</code> · <code>infer_user_preferences</code> · persona §Learning Behaviour</td></tr>
