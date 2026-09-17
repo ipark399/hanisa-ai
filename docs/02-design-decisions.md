@@ -1,9 +1,5 @@
 # CIMB CFO Agent — Design Decisions
 
-**Audience.** Engineers, risk and compliance reviewers who need to know *why* the agent is shaped the way it is before changing it.
-**Scope of this revision.** Section 1 states the design principle and shows how the build answers the questions a bank asks of an AI system. Each individual decision record (framework, data split, gate placement, action allow-list, learning confirmation, date handling, hosting) follows in later sections of this document.
-**Ground truth.** Every claim below points at a file or a row in the build at commit `1b5916a`. Where the build only partially implements a control, `docs/03-tech-stack-and-migration.md` lists what must be hardened before production; this section describes the shape, not the depth.
-
 ---
 
 ## 1. Why this shape fits a bank
