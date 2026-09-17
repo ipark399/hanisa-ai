@@ -236,8 +236,8 @@
       <li><a href="#s1"><span class="n">1</span><span>Repository map</span></a></li>
       <li><a href="#s2"><span class="n">2</span><span>Runtime map, as built</span></a></li>
       <li><a href="#s3"><span class="n">3</span><span>Server API contracts</span></a></li>
-      <li><a href="#s4"><span class="n">4</span><span>What the front end owns</span></a></li>
-      <li><a href="#s5"><span class="n">5</span><span>Agent configuration seams</span></a></li>
+      <li><a href="#s4"><span class="n">4</span><span>Front end configuration</span></a></li>
+      <li><a href="#s5"><span class="n">5</span><span>Server (agent) configuration</span></a></li>
       <li><a href="#s6"><span class="n">6</span><span>Environment</span></a></li>
       <li><a href="#s8"><span class="n">7</span><span>Diagrams</span></a></li>
       <li><a href="#s9"><span class="n">8</span><span>Tool catalog</span></a></li>
@@ -463,7 +463,7 @@ DATA         │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
     </section>
 
     <section id="s4">
-      <h2><span class="n">04</span><span>What the front end owns today — reproduce or consciously drop</span></h2>
+      <h2><span class="n">04</span><span>Front end configuration (client side)</span></h2>
       <p>If you replace <code>page.tsx</code>, this is the behaviour that lives there and nowhere else.</p>
       <div class="tablewrap"><table>
         <thead><tr><th>#</th><th>Behaviour</th><th>Where</th><th>Keep?</th></tr></thead>
@@ -487,7 +487,7 @@ show_loan_options        → act2, step 2, <span class="c">no API call</span></c
     </section>
 
     <section id="s5">
-      <h2><span class="n">05</span><span>Agent configuration seams (server side)</span></h2>
+      <h2><span class="n">05</span><span>Server (agent) configuration</span></h2>
       <p>Everything the agent <em>is</em> sits in five files under <code>web/lib/</code>. They are intentionally simple: no framework, no abstraction layer, one SDK call.</p>
 
       <h3>5.1 <code>persona.ts</code> — what the agent is like</h3>

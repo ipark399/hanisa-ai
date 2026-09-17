@@ -251,7 +251,7 @@ Deletes rows whose ids start with `ph_flx_`, `cl_flx_`, `sched_fx_`, `int_`, `pr
 
 ---
 
-## 4. What the front end owns today — reproduce or consciously drop
+## 4. Front end configuration (client side)
 
 If you replace `page.tsx`, this is the behaviour that lives there and nowhere else:
 
@@ -278,7 +278,7 @@ show_loan_options        → act2, step 2, no API call
 
 ---
 
-## 5. Agent configuration seams (server side)
+## 5. Server (agent) configuration
 
 Everything the agent *is* sits in five files under `web/lib/`. They are intentionally simple: no framework, no abstraction layer, one SDK call.
 
