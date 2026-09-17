@@ -139,9 +139,6 @@
   .pill.your { color: var(--warn); background: var(--warn-bg); }
   .pill.rec { color: var(--muted); background: var(--bg-code); }
 
-  .gotchas { counter-reset: g; list-style: none; padding: 0; max-width: 68ch; display: grid; gap: 10px; }
-  .gotchas li { counter-increment: g; display: grid; grid-template-columns: 2.2ch 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
-  .gotchas li::before { content: counter(g); font-family: var(--mono); color: var(--warn); font-weight: 600; }
 
   footer { grid-column: 1 / -1; margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
 
@@ -196,9 +193,8 @@
       <li><a href="#s4"><span class="n">4</span><span>What the front end owns</span></a></li>
       <li><a href="#s5"><span class="n">5</span><span>Agent configuration seams</span></a></li>
       <li><a href="#s6"><span class="n">6</span><span>Environment</span></a></li>
-      <li><a href="#s7"><span class="n">7</span><span>Known issues, first week</span></a></li>
-      <li><a href="#s8"><span class="n">8</span><span>Diagrams</span></a></li>
-      <li><a href="#s9"><span class="n">9</span><span>Tool catalog</span></a></li>
+      <li><a href="#s8"><span class="n">7</span><span>Diagrams</span></a></li>
+      <li><a href="#s9"><span class="n">8</span><span>Tool catalog</span></a></li>
     </ol>
   </nav>
 
@@ -530,24 +526,11 @@ tools/&lt;file&gt;.ts   export async function get_x(args) { … }         <span 
       </table></div>
     </section>
 
-    <section id="s7">
-      <h2><span class="n">07</span><span>Known issues you will meet in the first week</span></h2>
-      <ol class="gotchas">
-        <li><span><strong>The Sankey panel is scripted</strong> (F8). Do not present it as "live tool calls" unless you wire it to <code>tool_calls[]</code>.</span></li>
-        <li><span><strong>The model can write.</strong> <code>record_user_action</code> is callable by the model; the RM gate changes the reply text, not the tool call. Rows land as <code>pending_rm_review</code>, so nothing is "executed", but audit it.</span></li>
-        <li><span><strong>The RM gate regexes are Claude-specific.</strong> A different model's phrasing may fail to match them, or match when it should not.</span></li>
-        <li><span><strong>One shared session, one customer.</strong> Two simultaneous demos overwrite each other's pending rows and reset each other.</span></li>
-        <li><span><strong>Playwright asserts display dates</strong> (<code>Jul …</code>) from an earlier data shift; 6 of 9 tests fail until the assertions read from <code>STEPS[]</code>.</span></li>
-        <li><span><strong>Data is anchored to fixed dates.</strong> Every table is anchored to Act 1 = 2026-08-14 / Act 2 = 2026-09-01. <code>scripts/shift_demo_dates.mjs &lt;days&gt;</code> moves it; the four code files that carry literal dates are listed in <code>docs/04-runbook.md</code>.</span></li>
-        <li><span><strong>The <code>/api/action</code> confirmation text costs one model call whose result the front end does not use.</strong> Delete the call or use the text.</span></li>
-      </ol>
-    </section>
-
     <section id="s8">
-      <h2><span class="n">08</span><span>Diagrams</span></h2>
+      <h2><span class="n">07</span><span>Diagrams</span></h2>
       <p>Four views, all Mermaid so they render on GitHub and diff in git. Six earlier diagrams (concept, storyline, tables) live in <code>docs/demo/*.mmd</code>.</p>
 
-      <h3>8.1 Containers and the three entry paths</h3>
+      <h3>7.1 Containers and the three entry paths</h3>
       <div class="diagram"><pre class="mermaid">
 %%{init: {"themeVariables": {"fontSize": "18px"}, "flowchart": {"nodeSpacing": 40, "rankSpacing": 60, "padding": 12}}}%%
 flowchart LR
@@ -592,7 +575,7 @@ flowchart LR
   T --> TOOLS
       </pre></div>
 
-      <h3>8.2 One Free-QA turn</h3>
+      <h3>7.2 One Free-QA turn</h3>
       <div class="diagram"><pre class="mermaid">
 %%{init: {"themeVariables": {"fontSize": "18px"}, "sequence": {"actorFontSize": 18, "messageFontSize": 16, "noteFontSize": 16, "width": 190, "height": 52, "boxMargin": 12, "messageMargin": 40}}}%%
 sequenceDiagram
@@ -632,7 +615,7 @@ sequenceDiagram
   FE->>FE: render reply · actions[] as buttons · append to freeQAHistory
       </pre></div>
 
-      <h3>8.3 Storyboard state machine</h3>
+      <h3>7.3 Storyboard state machine</h3>
       <div class="diagram"><pre class="mermaid">
 %%{init: {"themeVariables": {"fontSize": "18px"}}}%%
 stateDiagram-v2
@@ -671,7 +654,7 @@ stateDiagram-v2
       </pre></div>
       <p>Every step carries its own <code>asOfIso</code>; Free QA inherits the step it was typed on. Reset Act rewinds the current act to step 1; Reset All returns to intro; neither touches the DB — that is Reset DB (<code>/api/reset-demo</code>).</p>
 
-      <h3>8.4 Tables and their keys</h3>
+      <h3>7.4 Tables and their keys</h3>
       <div class="diagram"><pre class="mermaid">
 %%{init: {"themeVariables": {"fontSize": "18px"}, "er": {"fontSize": 16, "entityPadding": 18, "minEntityWidth": 140}}}%%
 erDiagram
@@ -722,7 +705,7 @@ erDiagram
     </section>
 
     <section id="s9">
-      <h2><span class="n">09</span><span>Tool catalog</span></h2>
+      <h2><span class="n">08</span><span>Tool catalog</span></h2>
       <p>What the model can call, what it gets back, and where the data comes from. <em>clock</em> = the handler filters by <code>getDemoCurrentTimestamp()</code>. <em>writes</em> = the handler inserts or updates. Argument defaults are the handler's, not the schema's. ✱ = required in the schema.</p>
       <div class="tablewrap"><table>
         <thead><tr><th>tool</th><th>arguments</th><th>returns (top-level)</th><th>reads</th><th>writes</th><th>clock</th></tr></thead>

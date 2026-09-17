@@ -378,23 +378,11 @@ Creates the `@supabase/supabase-js` client with the **service-role** key (bypass
 
 ---
 
-## 7. Known issues you will meet in the first week
-
-1. **The Sankey panel is scripted** (F8). Do not present it as "live tool calls" unless you wire it to `tool_calls[]`.
-2. **The model can write.** `record_user_action` is callable by the model; the RM gate changes the reply text, not the tool call. Rows land as `pending_rm_review`, so nothing is "executed", but audit it.
-3. **The RM gate regexes are Claude-specific.** A different model's phrasing may fail to match them, or match when it should not.
-4. **One shared session, one customer.** Two simultaneous demos overwrite each other's pending rows and reset each other.
-5. **Playwright asserts display dates** (`Jul …`) from an earlier data shift; 6 of 9 tests fail until the assertions read from `STEPS[]`.
-6. **Data is anchored to fixed dates.** Every table is anchored to Act 1 = 2026-08-14 / Act 2 = 2026-09-01. `scripts/shift_demo_dates.mjs <days>` moves it; the four code files that carry literal dates are listed in `docs/04-runbook.md`.
-7. **The `/api/action` confirmation text costs one model call whose result the front end does not use.** Delete the call or use the text.
-
----
-
-## 8. Diagrams
+## 7. Diagrams
 
 Four views, all Mermaid so they render on GitHub and diff in git. Six earlier diagrams (concept, storyline, tables) live in `docs/demo/*.mmd`.
 
-### 8.1 Containers and the three entry paths
+### 7.1 Containers and the three entry paths
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "18px"}, "flowchart": {"nodeSpacing": 40, "rankSpacing": 60, "padding": 12}}}%%
@@ -440,7 +428,7 @@ flowchart LR
   T --> TOOLS
 ```
 
-### 8.2 One Free-QA turn
+### 7.2 One Free-QA turn
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "18px"}, "sequence": {"actorFontSize": 18, "messageFontSize": 16, "noteFontSize": 16, "width": 190, "height": 52, "boxMargin": 12, "messageMargin": 40}}}%%
@@ -481,7 +469,7 @@ sequenceDiagram
   FE->>FE: render reply · actions[] as buttons · append to freeQAHistory
 ```
 
-### 8.3 Storyboard state machine
+### 7.3 Storyboard state machine
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "18px"}}}%%
@@ -522,7 +510,7 @@ stateDiagram-v2
 
 Every step carries its own `asOfIso`; Free QA inherits the step it was typed on. Reset Act rewinds the current act to step 1; Reset All returns to intro; neither touches the DB — that is Reset DB (`/api/reset-demo`).
 
-### 8.4 Tables and their keys
+### 7.4 Tables and their keys
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "18px"}, "er": {"fontSize": 16, "entityPadding": 18, "minEntityWidth": 140}}}%%
@@ -575,7 +563,7 @@ erDiagram
 
 ---
 
-## 9. Tool catalog
+## 8. Tool catalog
 
 What the model can call, what it gets back, and where the data comes from. `clock` = the handler filters by `getDemoCurrentTimestamp()`. `writes` = the handler inserts or updates. Argument defaults are the handler's, not the schema's.
 
