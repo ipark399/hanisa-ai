@@ -560,7 +560,7 @@ sequenceDiagram
   autonumber
   participant FE as page.tsx
   participant API as /api/chat
-  participant Loop as runChat()
+  participant Run as runChat()
   participant LLM as Claude
   participant Tools as lib/tools
   participant DB as Postgres
@@ -568,26 +568,26 @@ sequenceDiagram
   FE->>API: POST {messages (Free-QA only), session_id, step_context{asOfIso, recentPushText…}}
   API->>API: runWithDemoAsOf(asOfIso)
   API->>DB: INSERT bank_interactions (user turn)
-  API->>Loop: runChat(history, step_context)
-  Loop->>Loop: system = persona(cached) + clock + scenario + recent push
+  API->>Run: runChat(history, step_context)
+  Run->>Run: system = persona(cached) + clock + scenario + recent push
   loop up to 6 times
-    Loop->>LLM: messages.create({system, tools[24], messages})
+    Run->>LLM: messages.create({system, tools[24], messages})
     alt stop_reason = tool_use
-      LLM-->>Loop: tool_use blocks
+      LLM-->>Run: tool_use blocks
       par each block
-        Loop->>Loop: suggest_action? → allow-list(12) → actions[]
-        Loop->>Tools: dispatchTool(name, input)
+        Run->>Run: suggest_action? → allow-list(12) → actions[]
+        Run->>Tools: dispatchTool(name, input)
         Tools->>DB: select … lte(asOf)
         DB-->>Tools: rows
-        Tools-->>Loop: JSON (or {error})
+        Tools-->>Run: JSON (or {error})
       end
-      Loop->>Loop: messages += assistant tool_use + user tool_result
+      Run->>Run: messages += assistant tool_use + user tool_result
     else stop_reason = end_turn
-      LLM-->>Loop: text
-      Loop->>Loop: RM gate: gated action ∧ (completion claim ∨ boilerplate) → template text
+      LLM-->>Run: text
+      Run->>Run: RM gate: gated action ∧ (completion claim ∨ boilerplate) → template text
     end
   end
-  Loop-->>API: {reply, tool_calls[], actions[], stop_reason}
+  Run-->>API: {reply, tool_calls[], actions[], stop_reason}
   API->>DB: INSERT bank_interactions (agent turn)
   API-->>FE: JSON
   FE->>FE: render reply · actions[] as buttons · append to freeQAHistory
@@ -599,22 +599,22 @@ sequenceDiagram
 stateDiagram-v2
   direction LR
   [*] --> intro
-  state "intro · Thu 13 Aug 22:00" as intro
+  state "intro · Thu 13 Aug 22∶00" as intro
   state "act1" as act1 {
     direction LR
-    a1s1: 1 · Fri 14 Aug 09:00<br/>weekly brief push
-    a1s2: 2 · 10:30<br/>FX trigger + Bloomberg<br/>[Lock now]
-    a1s3: 3 · 10:33<br/>Request received<br/>REQ-FXFW-2026-7142
+    a1s1: 1 · Fri 14 Aug 09∶00<br/>weekly brief push
+    a1s2: 2 · 10∶30<br/>FX trigger + Bloomberg<br/>[Lock now]
+    a1s3: 3 · 10∶33<br/>Request received<br/>REQ-FXFW-2026-7142
     a1s1 --> a1s2: Next
     a1s2 --> a1s3: Next
     a1s2 --> a1s3: tap Lock now<br/>→ POST /api/action
   }
   state "act2" as act2 {
     direction LR
-    a2s1: 1 · Tue 1 Sep 15:00<br/>FlexiCash trigger<br/>[Apply] [Show me options]
-    a2s2: 2 · 15:01<br/>loan comparison 6.5% vs 8.0%
-    a2s3: 3 · 15:03<br/>Request received<br/>REQ-FLX-2026-2284
-    a2s4: 4 · 15:05<br/>learning · 3 Free-QA turns
+    a2s1: 1 · Tue 1 Sep 15∶00<br/>FlexiCash trigger<br/>[Apply] [Show me options]
+    a2s2: 2 · 15∶01<br/>loan comparison 6.5% vs 8.0%
+    a2s3: 3 · 15∶03<br/>Request received<br/>REQ-FLX-2026-2284
+    a2s4: 4 · 15∶05<br/>learning · 3 Free-QA turns
     a2s1 --> a2s2: Next / tap Show me options
     a2s2 --> a2s3: Next
     a2s1 --> a2s3: tap Apply<br/>→ POST /api/action
