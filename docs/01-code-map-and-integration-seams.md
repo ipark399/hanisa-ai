@@ -6,26 +6,6 @@
 
 ---
 
-## Terms used in this document
-
-Project words that are not industry terms, defined once. Code identifiers keep their names.
-
-| term | meaning |
-|---|---|
-| **storyboard / scripted step** | The 8 pre-written demo steps in `demo_storyboard.ts`. Their agent messages are fixed text; no model call produces them. |
-| **Free QA** | Anything the customer types instead of pressing Next. These turns go to the model. |
-| **Push / Pull** | Push: the agent speaks first (weekly brief, FX alert, credit alert). Pull: the customer asks and the agent answers. |
-| **weekly brief** | The Monday-morning summary push. Named `monday_brief` in code. |
-| **demo clock / `asOfIso`** | The timestamp each scripted step treats as "now". Time-dependent reads filter on it so an Act 2 question reads Act 2's data. |
-| **RM gate** | A code check on the model's final reply. If the reply claims a request is complete when it only needs relationship-manager review, the reply is replaced with a fixed template. |
-| **`pending_rm_review`** | The only status a Lock or Apply can write. A relationship manager finalises the request outside the agent. |
-| **allow-list** | The 12 action ids the model may attach to a reply as a button (`ALLOWED_LLM_ACTIONS`). Anything else is dropped. |
-| **SME maturity tier** | A 1–5 band from CIMB's SME maturity model. Products carry the tier range they suit (`min/max_complexity_level`); the customer's inferred tier (4) filters recommendations. It is a product-suitability band, not a credit rating. |
-| **RM** | Relationship manager — the bank employee who finalises any request the agent records. |
-| **the model / the agent** | *The model* is the language model (`claude-opus-4-8`). *The agent* is the whole system: model, persona, tools, gates and data. |
-
----
-
 ## 1. Repository map
 
 ```

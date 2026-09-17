@@ -186,7 +186,6 @@
   <nav class="toc" aria-label="Contents of document 01">
     <p>Contents</p>
     <ol>
-      <li><a href="#s0"><span class="n">·</span><span>Terms</span></a></li>
       <li><a href="#s1"><span class="n">1</span><span>Repository map</span></a></li>
       <li><a href="#s2"><span class="n">2</span><span>Runtime map, as built</span></a></li>
       <li><a href="#s3"><span class="n">3</span><span>Server API contracts</span></a></li>
@@ -199,27 +198,6 @@
   </nav>
 
   <main>
-
-    <section id="s0">
-      <h2><span class="n">·</span><span>Terms used in this document</span></h2>
-      <p>Project words that are not industry terms, defined once. Code identifiers keep their names.</p>
-      <div class="tablewrap"><table>
-        <thead><tr><th>term</th><th>meaning</th></tr></thead>
-        <tbody>
-          <tr><td><strong>storyboard / scripted step</strong></td><td>The 8 pre-written demo steps in <code>demo_storyboard.ts</code>. Their agent messages are fixed text; no model call produces them.</td></tr>
-          <tr><td><strong>Free QA</strong></td><td>Anything the customer types instead of pressing Next. These turns go to the model.</td></tr>
-          <tr><td><strong>Push / Pull</strong></td><td>Push: the agent speaks first (weekly brief, FX alert, credit alert). Pull: the customer asks and the agent answers.</td></tr>
-          <tr><td><strong>weekly brief</strong></td><td>The Monday-morning summary push. Named <code>monday_brief</code> in code.</td></tr>
-          <tr><td><strong>demo clock / <code>asOfIso</code></strong></td><td>The timestamp each scripted step treats as "now". Time-dependent reads filter on it so an Act 2 question reads Act 2's data.</td></tr>
-          <tr><td><strong>RM gate</strong></td><td>A code check on the model's final reply. If the reply claims a request is complete when it only needs relationship-manager review, the reply is replaced with a fixed template.</td></tr>
-          <tr><td><strong><code>pending_rm_review</code></strong></td><td>The only status a Lock or Apply can write. A relationship manager finalises the request outside the agent.</td></tr>
-          <tr><td><strong>allow-list</strong></td><td>The 12 action ids the model may attach to a reply as a button (<code>ALLOWED_LLM_ACTIONS</code>). Anything else is dropped.</td></tr>
-          <tr><td><strong>SME maturity tier</strong></td><td>A 1–5 band from CIMB's SME maturity model. Products carry the tier range they suit (<code>min/max_complexity_level</code>); the customer's inferred tier (4) filters recommendations. It is a product-suitability band, not a credit rating.</td></tr>
-          <tr><td><strong>RM</strong></td><td>Relationship manager — the bank employee who finalises any request the agent records.</td></tr>
-          <tr><td><strong>the model / the agent</strong></td><td><em>The model</em> is the language model (<code>claude-opus-4-8</code>). <em>The agent</em> is the whole system: model, persona, tools, gates and data.</td></tr>
-        </tbody>
-      </table></div>
-    </section>
 
     <section id="s1">
       <h2><span class="n">01</span><span>Repository map</span></h2>
