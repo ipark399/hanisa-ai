@@ -194,11 +194,6 @@ What the server does with it, in order (`chat/route.ts` → `chat_loop.ts`):
 5. On the final text, applies the RM gate: if a gated action (`accept_preapproved_offer`, `lock_fx_forward`) was emitted **and** the text claims completion or is boilerplate-only, the text is replaced by a fixed "tap the button, your RM will contact you" sentence.
 6. Inserts the reply into `bank_interactions` and returns.
 
-**Two rules the current client follows that a new client must keep**
-
-- **History = Free-QA turns only.** Scripted push messages (rendered from `STEPS[n].newMessages`) are **not** included in `messages`. Including them made the model "remember" saying things it never generated. Instead, send the current push as `recentPushText`.
-- **`asOfIso` = the active step's clock, every time.** Act 2 questions with an Act 1 clock read the wrong cashflow snapshot and contradict the storyboard.
-
 ### 3.2 `POST /api/action` — a button was tapped
 
 Request:

@@ -420,10 +420,6 @@ DATA         │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
         <li>On the final text, applies the RM gate: if a gated action (<code>accept_preapproved_offer</code>, <code>lock_fx_forward</code>) was emitted <strong>and</strong> the text claims completion or is boilerplate-only, the text is replaced by a fixed "tap the button, your RM will contact you" sentence.</li>
         <li>Inserts the reply into <code>bank_interactions</code> and returns.</li>
       </ol>
-      <h3>Two rules the current client follows that a new client must keep</h3>
-      <div class="rule"><b>Rule 1</b><span><strong>History = Free-QA turns only.</strong> Scripted push messages (rendered from <code>STEPS[n].newMessages</code>) are <strong>not</strong> included in <code>messages</code>. Including them made the model "remember" saying things it never generated. Instead, send the current push as <code>recentPushText</code>.</span></div>
-      <div class="rule"><b>Rule 2</b><span><strong><code>asOfIso</code> = the active step's clock, every time.</strong> Act 2 questions with an Act 1 clock read the wrong cashflow snapshot and contradict the storyboard.</span></div>
-
       <h3>3.2 <code>POST /api/action</code> — a button was tapped</h3>
       <p>Request:</p>
 <pre><code>{
