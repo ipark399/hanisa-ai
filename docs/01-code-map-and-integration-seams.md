@@ -83,18 +83,63 @@ w04/                                   lines  role
 
 ---
 
-## 2. Runtime topology
+## 2. Runtime map, as built
+
+Layered the way an agent platform is usually drawn — strategy, planning, execution, platform — so the gaps read as clearly as the parts. `◆` marks a behaviour the code enforces; everything else is prompt text or convention.
 
 ```
- BROWSER (page.tsx)                          SERVER (web/app/api + web/lib)
- ─────────────────────────────               ─────────────────────────────────────────────
- [Next ▶]  ──renders STEPS[n]──────────────►  nothing. Scripted text never touches the server.
- [button]  ──STORYBOARD_ACTION_MAP──────────►  POST /api/action ─► record_user_action() ─► DB
- [text]    ──freeQAHistory + step_context──►  POST /api/chat   ─► runChat() ─► Claude ⇄ tools ⇄ DB
- [Reset DB]────────────────────────────────►  POST /api/reset-demo ─► DB
-                                              DB = Supabase Postgres, 26 tables, service-role key
-                                              LLM = Anthropic API, claude-opus-4-8, prompt cache
+2026 · CIMB CFO AGENT · AS BUILT (commit 1b5916a)
+STRATEGY
+┌──────────────┐ tap · type ┌──────────────────────────────────────────────────┐    ┌──────────────────────────────┐
+│  SME owner   │───────────►│ Demo shell · page.tsx (client)                   │    │ Memory (DB rows)             │
+│  Ahmad only  │            │ storyboard 8 steps · asOfIso per step            │    │ infer_user_preferences       │
+└──────────────┘            │ [Next] scripted · [button] map · [text] Free QA  │    │ infer_learning_events        │
+                            └───────────────────────┬──────────────────────────┘    │ confirmed_by_user = true     │
+                                                    │ POST /api/chat                │ (hard-coded in tool)         │
+                                                    │ messages (Free-QA only)       └──────────────▲───────────────┘
+                                                    │ + step_context{asOfIso…}                     │ record_learning_event
+                            ┌───────────────────────▼──────────────────────────┐    ┌──────────────┴───────────────┐
+                            │ CFO Agent · chat_loop.ts (server)                │◄──►│ Learning loop (prompt only)  │
+                            │ claude-opus-4-8 · persona 56 lines (cached)      │    │ paraphrase → confirm → save  │
+                            │ Push / Pull · tool loop ≤ 6 · 24 tool schemas    │    │ 3-turn gate not enforced     │
+                            │ ◆ whitelist 12 · ◆ RM gate (2 regex)             │    └──────────────────────────────┘
+                            └───────────────────────┬──────────────────────────┘
+PLANNING · triggers 3 (live tools — the storyboard pushes on screen are scripted text)
+               ┌────────────────────────────────────┼─────────────────────────────────┐
+               ▼                                    ▼                                 ▼
+┌──────────────────────────┐        ┌──────────────────────────┐        ┌──────────────────────────┐
+│ check_monday_brief       │        │ check_fx_opportunity     │        │ check_flexicash_opp.     │
+│ always fires · 7d proj   │        │ EUR forecast ≤ 14d  AND  │        │ dip flag (21d proj) AND  │
+│ overdue · 3-day FX delta │        │ mid ≥ 2.0% over 90d avg  │        │ open FlexiCash offer     │
+└────────────┬─────────────┘        └────────────┬─────────────┘        └────────────┬─────────────┘
+EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 2 write    │
+┌────────────▼─────────────┐        ┌────────────▼─────────────┐        ┌────────────▼─────────────┐
+│ bank_* · 15 tables       │        │ bloomberg_market_        │        │ bank_product_catalog     │
+│ accounts · balances ·    │        │ snapshots · 2 rows       │        │ pricing_daily · offers   │
+│ transactions · fx_rates… │        │ news + FX percentile     │        │ credit_limits · holdings │
+└────────────┬─────────────┘        └──────────────────────────┘        └────────────┬─────────────┘
+             │                                                                       │
+┌────────────▼───────────────────────────────────────────────────────────────────────▼─────────────┐
+│ infer_* · 10 tables — counterparties · forecasted_payments · expected_inflows · cashflow_projection│
+│ seasonality · company_profile … · SEEDED by migration 0002 — nothing computes them at runtime     │
+└────────────────────────────────────────┬─────────────────────────────────────────────────────────┘
+                                         │ POST /api/action  (Lock · Apply)  ◆ as_of_iso
+┌────────────────────────────────────────▼─────────────────────────────────────────────────────────┐
+│ RM handoff — rows land with ◆ status = pending_rm_review · nothing downstream · Reset DB clears   │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ platform · always on ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
+┆ LLM     Anthropic API direct · prompt cache on persona prefix · no gateway · no rate limit · no cost  ┆
+┆ Audit   every user / agent turn → bank_interactions · tool_calls[] returned to UI, not persisted     ┆
+┆ Hosting Vercel (web) · Supabase free tier — pauses after 7 idle days · service-role key · no RLS     ┆
+└┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+· 1 loop, not 3 tiers · one session · one customer · demo clock per step · scripted + improvised · evals by hand
 ```
+
+Three things to read off it:
+
+1. **The PLANNING layer is three functions, not three agents.** There is no delegation; `chat_loop.ts` calls them as tools. Hence "1 loop, not 3 tiers".
+2. **The two right-hand boxes differ in strength.** Memory exists as DB rows. The learning loop's "confirm before save" is a persona sentence, so it carries no `◆`.
+3. **The platform band is thin.** No gateway, no rate limit, no cost attribution, no tracing store — only per-turn audit rows and a prompt cache.
 
 ---
 

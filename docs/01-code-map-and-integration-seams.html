@@ -113,7 +113,8 @@
      render at their natural size; wide ones scroll sideways instead of
      shrinking to fit. */
   .diagram { position: relative; left: 50%; transform: translateX(-50%); width: min(1120px, 100vw - 40px); overflow-x: auto; margin: 6px 0 22px; padding: 20px 16px; border: 1px solid var(--line); background: var(--bg-code); }
-  .diagram pre.mermaid { margin: 0; padding: 0; border: 0; background: none; overflow: visible; font-size: 15px; }
+  .diagram pre { margin: 0; padding: 0; border: 0; background: none; overflow: visible; font-size: 15px; }
+  .diagram pre.ascii { font-size: 12.5px; line-height: 1.4; white-space: pre; }
   .diagram svg { max-width: none !important; height: auto; display: block; }
   @media (max-width: 860px) { .diagram { width: calc(100vw - 40px); } }
   table { border-collapse: collapse; width: 100%; font-size: 15px; }
@@ -166,7 +167,7 @@
     <p>Contents</p>
     <ol>
       <li><a href="#s1"><span class="n">1</span><span>Repository map</span></a></li>
-      <li><a href="#s2"><span class="n">2</span><span>Runtime topology</span></a></li>
+      <li><a href="#s2"><span class="n">2</span><span>Runtime map, as built</span></a></li>
       <li><a href="#s3"><span class="n">3</span><span>Server API contracts</span></a></li>
       <li><a href="#s4"><span class="n">4</span><span>What the front end owns</span></a></li>
       <li><a href="#s5"><span class="n">5</span><span>Agent configuration seams</span></a></li>
@@ -256,15 +257,59 @@
     </section>
 
     <section id="s2">
-      <h2><span class="n">02</span><span>Runtime topology</span></h2>
-<pre><code> BROWSER (page.tsx)                          SERVER (web/app/api + web/lib)
- ─────────────────────────────               ─────────────────────────────────────────────
- [Next ▶]  ──renders STEPS[n]──────────────►  <span class="c">nothing. Scripted text never touches the server.</span>
- [button]  ──STORYBOARD_ACTION_MAP──────────►  POST /api/action ─► record_user_action() ─► DB
- [text]    ──freeQAHistory + step_context──►  POST /api/chat   ─► runChat() ─► Claude ⇄ tools ⇄ DB
- [Reset DB]────────────────────────────────►  POST /api/reset-demo ─► DB
-                                              <span class="c">DB  = Supabase Postgres, 26 tables, service-role key</span>
-                                              <span class="c">LLM = Anthropic API, claude-opus-4-8, prompt cache</span></code></pre>
+      <h2><span class="n">02</span><span>Runtime map, as built</span></h2>
+      <p>Layered the way an agent platform is usually drawn — strategy, planning, execution, platform — so the gaps read as clearly as the parts. <code>◆</code> marks a behaviour the code enforces; everything else is prompt text or convention.</p>
+      <div class="diagram"><pre class="ascii">2026 · CIMB CFO AGENT · AS BUILT (commit 1b5916a)
+STRATEGY
+┌──────────────┐ tap · type ┌──────────────────────────────────────────────────┐    ┌──────────────────────────────┐
+│  SME owner   │───────────►│ Demo shell · page.tsx (client)                   │    │ Memory (DB rows)             │
+│  Ahmad only  │            │ storyboard 8 steps · asOfIso per step            │    │ infer_user_preferences       │
+└──────────────┘            │ [Next] scripted · [button] map · [text] Free QA  │    │ infer_learning_events        │
+                            └───────────────────────┬──────────────────────────┘    │ confirmed_by_user = true     │
+                                                    │ POST /api/chat                │ (hard-coded in tool)         │
+                                                    │ messages (Free-QA only)       └──────────────▲───────────────┘
+                                                    │ + step_context{asOfIso…}                     │ record_learning_event
+                            ┌───────────────────────▼──────────────────────────┐    ┌──────────────┴───────────────┐
+                            │ CFO Agent · chat_loop.ts (server)                │◄──►│ Learning loop (prompt only)  │
+                            │ claude-opus-4-8 · persona 56 lines (cached)      │    │ paraphrase → confirm → save  │
+                            │ Push / Pull · tool loop ≤ 6 · 24 tool schemas    │    │ 3-turn gate not enforced     │
+                            │ ◆ whitelist 12 · ◆ RM gate (2 regex)             │    └──────────────────────────────┘
+                            └───────────────────────┬──────────────────────────┘
+PLANNING · triggers 3 (live tools — the storyboard pushes on screen are scripted text)
+               ┌────────────────────────────────────┼─────────────────────────────────┐
+               ▼                                    ▼                                 ▼
+┌──────────────────────────┐        ┌──────────────────────────┐        ┌──────────────────────────┐
+│ check_monday_brief       │        │ check_fx_opportunity     │        │ check_flexicash_opp.     │
+│ always fires · 7d proj   │        │ EUR forecast ≤ 14d  AND  │        │ dip flag (21d proj) AND  │
+│ overdue · 3-day FX delta │        │ mid ≥ 2.0% over 90d avg  │        │ open FlexiCash offer     │
+└────────────┬─────────────┘        └────────────┬─────────────┘        └────────────┬─────────────┘
+EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 2 write    │
+┌────────────▼─────────────┐        ┌────────────▼─────────────┐        ┌────────────▼─────────────┐
+│ bank_* · 15 tables       │        │ bloomberg_market_        │        │ bank_product_catalog     │
+│ accounts · balances ·    │        │ snapshots · 2 rows       │        │ pricing_daily · offers   │
+│ transactions · fx_rates… │        │ news + FX percentile     │        │ credit_limits · holdings │
+└────────────┬─────────────┘        └──────────────────────────┘        └────────────┬─────────────┘
+             │                                                                       │
+┌────────────▼───────────────────────────────────────────────────────────────────────▼─────────────┐
+│ infer_* · 10 tables — counterparties · forecasted_payments · expected_inflows · cashflow_projection│
+│ seasonality · company_profile … · SEEDED by migration 0002 — nothing computes them at runtime     │
+└────────────────────────────────────────┬─────────────────────────────────────────────────────────┘
+                                         │ POST /api/action  (Lock · Apply)  ◆ as_of_iso
+┌────────────────────────────────────────▼─────────────────────────────────────────────────────────┐
+│ RM handoff — rows land with ◆ status = pending_rm_review · nothing downstream · Reset DB clears   │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ platform · always on ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
+┆ LLM     Anthropic API direct · prompt cache on persona prefix · no gateway · no rate limit · no cost  ┆
+┆ Audit   every user / agent turn → bank_interactions · tool_calls[] returned to UI, not persisted     ┆
+┆ Hosting Vercel (web) · Supabase free tier — pauses after 7 idle days · service-role key · no RLS     ┆
+└┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+· 1 loop, not 3 tiers · one session · one customer · demo clock per step · scripted + improvised · evals by hand</pre></div>
+      <p>Three things to read off it:</p>
+      <ol>
+        <li><strong>The PLANNING layer is three functions, not three agents.</strong> There is no delegation; <code>chat_loop.ts</code> calls them as tools. Hence "1 loop, not 3 tiers".</li>
+        <li><strong>The two right-hand boxes differ in strength.</strong> Memory exists as DB rows. The learning loop's "confirm before save" is a persona sentence, so it carries no <code>◆</code>.</li>
+        <li><strong>The platform band is thin.</strong> No gateway, no rate limit, no cost attribution, no tracing store — only per-turn audit rows and a prompt cache.</li>
+      </ol>
     </section>
 
     <section id="s3">
