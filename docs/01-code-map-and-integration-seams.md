@@ -6,13 +6,31 @@
 
 ---
 
+## Terms used in this document
+
+Project words that are not industry terms, defined once. Code identifiers keep their names.
+
+| term | meaning |
+|---|---|
+| **storyboard / scripted step** | The 8 pre-written demo steps in `demo_storyboard.ts`. Their agent messages are fixed text; no model call produces them. |
+| **Free QA** | Anything the customer types instead of pressing Next. These turns go to the model. |
+| **Push / Pull** | Push: the agent speaks first (weekly brief, FX alert, credit alert). Pull: the customer asks and the agent answers. |
+| **weekly brief** | The Monday-morning summary push. Named `monday_brief` in code. |
+| **demo clock / `asOfIso`** | The timestamp each scripted step treats as "now". Time-dependent reads filter on it so an Act 2 question reads Act 2's data. |
+| **RM gate** | A code check on the model's final reply. If the reply claims a request is complete when it only needs relationship-manager review, the reply is replaced with a fixed template. |
+| **`pending_rm_review`** | The only status a Lock or Apply can write. A relationship manager finalises the request outside the agent. |
+| **allow-list** | The 12 action ids the model may attach to a reply as a button (`ALLOWED_LLM_ACTIONS`). Anything else is dropped. |
+| **SME maturity tier** | A 1–5 band from CIMB's SME maturity model. Products carry the tier range they suit (`min/max_complexity_level`); the customer's inferred tier (4) filters recommendations. It is a product-suitability band, not a credit rating. |
+
+---
+
 ## 1. Repository map
 
 ```
 w04/                                   lines  role
 ├── web/                                      Next.js 15 app (App Router). Everything runs here.
 │   ├── app/
-│   │   ├── page.tsx                    510   THE FRONT END. All UI state, storyboard driver,
+│   │   ├── page.tsx                    510   The front end. All UI state, storyboard driver,
 │   │   │                                     Free-QA sender, button handler. Replace this.
 │   │   ├── layout.tsx                   14   HTML shell.
 │   │   ├── globals.css                 636   WhatsApp-style theme.
@@ -31,7 +49,7 @@ w04/                                   lines  role
 │   │   └── DemoControls.tsx             88   Next ▶, Jump, Reset Act, Reset All, Reset DB
 │   ├── lib/                                  Server-side agent core (except demo_storyboard.ts)
 │   │   ├── chat_loop.ts                272   runChat(): system prompt assembly, tool loop,
-│   │   │                                     suggest_action whitelist, RM gate
+│   │   │                                     suggest_action allow-list, RM gate
 │   │   ├── persona.ts                   56   System prompt text (tone, modes, rules)
 │   │   ├── tool_schemas.ts             255   The 24 tool definitions the LLM sees
 │   │   ├── anthropic.ts                 27   SDK client, MODEL_ID, prompt-cache helper
@@ -102,7 +120,7 @@ STRATEGY
                             │ CFO Agent · chat_loop.ts (server)                │◄──►│ Learning loop (prompt only)  │
                             │ claude-opus-4-8 · persona 56 lines (cached)      │    │ paraphrase → confirm → save  │
                             │ Push / Pull · tool loop ≤ 6 · 24 tool schemas    │    │ 3-turn gate not enforced     │
-                            │ ◆ whitelist 12 · ◆ RM gate (2 regex)             │    └──────────────────────────────┘
+                            │ ◆ allow-list 12 · ◆ RM gate (2 regex)            │    └──────────────────────────────┘
                             └───────────────────────┬──────────────────────────┘
 PLANNING · triggers 3 (live tools — the storyboard pushes on screen are scripted text)
                ┌────────────────────────────────────┼─────────────────────────────────┐
@@ -174,12 +192,12 @@ Response:
 
 ```jsonc
 {
-  "reply": "Looking at Café Lumière's history, Mr. Bakri: …",   // final text. May be a canned RM-gate string.
+  "reply": "Looking at Café Lumière's history, Mr. Bakri: …",   // final text. May be the RM gate's fixed template.
   "tool_calls": [                                                // every tool the model ran, in order
     { "name": "get_expected_inflows", "input": { "days_ahead": 14 }, "result": { … } }
   ],
   "stop_reason": "end_turn",         // "end_turn" | "max_iterations"
-  "actions": [                       // buttons the model asked for, ALREADY whitelisted server-side
+  "actions": [                       // buttons the model asked for, already checked against the allow-list
     { "label": "Compare with limit order", "action_id": "show_alternatives", "variant": "secondary", "payload": null }
   ]
 }
@@ -320,7 +338,7 @@ Knobs, with current values:
 | `ALLOWED_LLM_ACTIONS` — action ids the model may put on a button | 12 ids | 56 |
 | `GATED_ACTIONS` — ids that trigger the RM gate | `accept_preapproved_offer`, `lock_fx_forward` | 186 |
 | `COMPLIANCE_ONLY`, `DANGEROUS_COMPLETION` — the gate's regexes | tuned to Claude's phrasing | 190–191 |
-| canned RM reply | "Sure, Mr. Bakri — tap **{label}** below …" | 196 |
+| RM gate template reply | "Sure, Mr. Bakri — tap **{label}** below …" | 196 |
 | system block assembly | `buildSystemBlocks()` | 94 |
 
 **Recipe — allow a new model-suggested button.** Add the id to `ALLOWED_LLM_ACTIONS`; teach the front end what tapping it does (F4). Nothing else.
@@ -358,7 +376,7 @@ Creates the `@supabase/supabase-js` client with the **service-role** key (bypass
 
 ---
 
-## 7. Gotchas you will hit in the first week
+## 7. Known issues you will meet in the first week
 
 1. **The Sankey panel is scripted** (F8). Don't demo it as "live tool calls" unless you wire it to `tool_calls[]`.
 2. **The model can write.** `record_user_action` is callable by the model; the RM gate changes the reply text, not the tool call. Rows land as `pending_rm_review`, so nothing is "executed", but audit it.
@@ -443,7 +461,7 @@ sequenceDiagram
     alt stop_reason = tool_use
       LLM-->>Loop: tool_use blocks
       par each block
-        Loop->>Loop: suggest_action? → whitelist(12) → actions[]
+        Loop->>Loop: suggest_action? → allow-list(12) → actions[]
         Loop->>Tools: dispatchTool(name, input)
         Tools->>DB: select … lte(asOf)
         DB-->>Tools: rows
@@ -452,7 +470,7 @@ sequenceDiagram
       Loop->>Loop: messages += assistant tool_use + user tool_result
     else stop_reason = end_turn
       LLM-->>Loop: text
-      Loop->>Loop: RM gate: gated action ∧ (completion claim ∨ boilerplate) → canned text
+      Loop->>Loop: RM gate: gated action ∧ (completion claim ∨ boilerplate) → template text
     end
   end
   Loop-->>API: {reply, tool_calls[], actions[], stop_reason}
@@ -471,7 +489,7 @@ stateDiagram-v2
   state "intro · Thu 13 Aug 22:00" as intro
   state "act1" as act1 {
     direction LR
-    a1s1: 1 · Fri 14 Aug 09:00<br/>Monday brief push
+    a1s1: 1 · Fri 14 Aug 09:00<br/>weekly brief push
     a1s2: 2 · 10:30<br/>FX trigger + Bloomberg<br/>[Lock now]
     a1s3: 3 · 10:33<br/>Request received<br/>REQ-FXFW-2026-7142
     a1s1 --> a1s2: Next
@@ -578,7 +596,7 @@ What the model can call, what it gets back, and where the data comes from. `cloc
 | `check_fx_opportunity` | — | `{ trigger_fires, reason, payload{forecast, fx} }` fires when an EUR forecast ≤ 14d exists **and** current mid ≥ 2.0 % above 90-day avg | via `get_forecasted_payments(14)`; `bank_fx_rates` EOD | | ✓ |
 | `check_flexicash_opportunity` | — | `{ trigger_fires, reason, payload{projection, offer} }` fires when `projected_dip_below_threshold` **and** an open FlexiCash offer | via `get_cashflow_projection(21)`, `get_preapproved_offers()` | | ✓ |
 | `list_products_by_category` | `category` ✱ | `{ category, count, products[] }` | `bank_product_catalog` | | |
-| `find_products_by_use_case` | `use_case_tag` ✱, `complexity_level` (=4) | `{ use_case_tag, complexity_level, count, products[] }` tag match and level within min/max | `bank_product_catalog` | | |
+| `find_products_by_use_case` | `use_case_tag` ✱, `complexity_level` (=4 — the customer's SME maturity tier, 1–5) | `{ use_case_tag, complexity_level, count, products[] }` products carrying the tag whose suitable tier range (`min/max_complexity_level`) includes the customer's tier | `bank_product_catalog` | | |
 | `get_product_details` | `product_id` ✱ | `{ product }` full row or null | `bank_product_catalog` | | |
 | `get_product_pricing` | `product_id` ✱, `tenor` | `{ product_id, requested_tenor, as_of, pricing[] }` latest rows ≤ clock, max 20 | `bank_product_pricing_daily` | | ✓ |
 | `get_bloomberg_market_context` | `fx_pair` ✱, `as_of_iso` ✱ | one snapshot: headline, summary, url, published_at, `fx_rate_mid`, `historical_percentile_90d` … ; a "No market data" stub if none ≤ `as_of_iso` | `bloomberg_market_snapshots` | | ✓ (from arg) |

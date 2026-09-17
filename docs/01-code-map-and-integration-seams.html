@@ -166,13 +166,14 @@
   <nav class="toc" aria-label="Contents">
     <p>Contents</p>
     <ol>
+      <li><a href="#s0"><span class="n">·</span><span>Terms</span></a></li>
       <li><a href="#s1"><span class="n">1</span><span>Repository map</span></a></li>
       <li><a href="#s2"><span class="n">2</span><span>Runtime map, as built</span></a></li>
       <li><a href="#s3"><span class="n">3</span><span>Server API contracts</span></a></li>
       <li><a href="#s4"><span class="n">4</span><span>What the front end owns</span></a></li>
       <li><a href="#s5"><span class="n">5</span><span>Agent configuration seams</span></a></li>
       <li><a href="#s6"><span class="n">6</span><span>Environment</span></a></li>
-      <li><a href="#s7"><span class="n">7</span><span>Gotchas, first week</span></a></li>
+      <li><a href="#s7"><span class="n">7</span><span>Known issues, first week</span></a></li>
       <li><a href="#s8"><span class="n">8</span><span>Diagrams</span></a></li>
       <li><a href="#s9"><span class="n">9</span><span>Tool catalog</span></a></li>
     </ol>
@@ -180,13 +181,32 @@
 
   <main>
 
+    <section id="s0">
+      <h2><span class="n">·</span><span>Terms used in this document</span></h2>
+      <p>Project words that are not industry terms, defined once. Code identifiers keep their names.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>term</th><th>meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>storyboard / scripted step</strong></td><td>The 8 pre-written demo steps in <code>demo_storyboard.ts</code>. Their agent messages are fixed text; no model call produces them.</td></tr>
+          <tr><td><strong>Free QA</strong></td><td>Anything the customer types instead of pressing Next. These turns go to the model.</td></tr>
+          <tr><td><strong>Push / Pull</strong></td><td>Push: the agent speaks first (weekly brief, FX alert, credit alert). Pull: the customer asks and the agent answers.</td></tr>
+          <tr><td><strong>weekly brief</strong></td><td>The Monday-morning summary push. Named <code>monday_brief</code> in code.</td></tr>
+          <tr><td><strong>demo clock / <code>asOfIso</code></strong></td><td>The timestamp each scripted step treats as "now". Time-dependent reads filter on it so an Act 2 question reads Act 2's data.</td></tr>
+          <tr><td><strong>RM gate</strong></td><td>A code check on the model's final reply. If the reply claims a request is complete when it only needs relationship-manager review, the reply is replaced with a fixed template.</td></tr>
+          <tr><td><strong><code>pending_rm_review</code></strong></td><td>The only status a Lock or Apply can write. A relationship manager finalises the request outside the agent.</td></tr>
+          <tr><td><strong>allow-list</strong></td><td>The 12 action ids the model may attach to a reply as a button (<code>ALLOWED_LLM_ACTIONS</code>). Anything else is dropped.</td></tr>
+          <tr><td><strong>SME maturity tier</strong></td><td>A 1–5 band from CIMB's SME maturity model. Products carry the tier range they suit (<code>min/max_complexity_level</code>); the customer's inferred tier (4) filters recommendations. It is a product-suitability band, not a credit rating.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
     <section id="s1">
       <h2><span class="n">01</span><span>Repository map</span></h2>
       <p>Every tracked source file, with its line count and the one job it does. Red names are the files you replace; everything under <code>app/api/</code> and <code>lib/</code> is the surface you integrate with.</p>
 <pre class="tree"><code>w04/                                   <span class="role">lines  role</span>
 ├── web/                                      <span class="role">Next.js 15 app (App Router). Everything runs here.</span>
 │   ├── app/
-│   │   ├── <span class="hot">page.tsx</span>                    510   <span class="role">THE FRONT END. All UI state, storyboard driver,</span>
+│   │   ├── <span class="hot">page.tsx</span>                    510   <span class="role">The front end. All UI state, storyboard driver,</span>
 │   │   │                                     <span class="role">Free-QA sender, button handler. Replace this.</span>
 │   │   ├── layout.tsx                   14   <span class="role">HTML shell.</span>
 │   │   ├── globals.css                 636   <span class="role">WhatsApp-style theme.</span>
@@ -205,7 +225,7 @@
 │   │   └── DemoControls.tsx             88   <span class="role">Next ▶, Jump, Reset Act, Reset All, Reset DB</span>
 │   ├── lib/                                  <span class="role">Server-side agent core (except demo_storyboard.ts)</span>
 │   │   ├── chat_loop.ts                272   <span class="role">runChat(): system prompt assembly, tool loop,</span>
-│   │   │                                     <span class="role">suggest_action whitelist, RM gate</span>
+│   │   │                                     <span class="role">suggest_action allow-list, RM gate</span>
 │   │   ├── persona.ts                   56   <span class="role">System prompt text (tone, modes, rules)</span>
 │   │   ├── tool_schemas.ts             255   <span class="role">The 24 tool definitions the LLM sees</span>
 │   │   ├── anthropic.ts                 27   <span class="role">SDK client, MODEL_ID, prompt-cache helper</span>
@@ -273,7 +293,7 @@ STRATEGY
                             │ CFO Agent · chat_loop.ts (server)                │◄──►│ Learning loop (prompt only)  │
                             │ claude-opus-4-8 · persona 56 lines (cached)      │    │ paraphrase → confirm → save  │
                             │ Push / Pull · tool loop ≤ 6 · 24 tool schemas    │    │ 3-turn gate not enforced     │
-                            │ ◆ whitelist 12 · ◆ RM gate (2 regex)             │    └──────────────────────────────┘
+                            │ ◆ allow-list 12 · ◆ RM gate (2 regex)            │    └──────────────────────────────┘
                             └───────────────────────┬──────────────────────────┘
 PLANNING · triggers 3 (live tools — the storyboard pushes on screen are scripted text)
                ┌────────────────────────────────────┼─────────────────────────────────┐
@@ -336,12 +356,12 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
 }</code></pre>
       <p>Response:</p>
 <pre><code>{
-  <span class="k">"reply"</span>: "Looking at Café Lumière's history, Mr. Bakri: …",   <span class="c">// final text. May be a canned RM-gate string.</span>
+  <span class="k">"reply"</span>: "Looking at Café Lumière's history, Mr. Bakri: …",   <span class="c">// final text. May be the RM gate's fixed template.</span>
   <span class="k">"tool_calls"</span>: [                                                <span class="c">// every tool the model ran, in order</span>
     { "name": "get_expected_inflows", "input": { "days_ahead": 14 }, "result": { … } }
   ],
   <span class="k">"stop_reason"</span>: "end_turn",         <span class="c">// "end_turn" | "max_iterations"</span>
-  <span class="k">"actions"</span>: [                       <span class="c">// buttons the model asked for, ALREADY whitelisted server-side</span>
+  <span class="k">"actions"</span>: [                       <span class="c">// buttons the model asked for, already checked against the allow-list</span>
     { "label": "Compare with limit order", "action_id": "show_alternatives", "variant": "secondary", "payload": null }
   ]
 }</code></pre>
@@ -451,7 +471,7 @@ tools/&lt;file&gt;.ts   export async function get_x(args) { … }         <span 
           <tr><td><code>ALLOWED_LLM_ACTIONS</code> — action ids the model may put on a button</td><td>12 ids</td><td class="num">56</td></tr>
           <tr><td><code>GATED_ACTIONS</code> — ids that trigger the RM gate</td><td><code>accept_preapproved_offer</code>, <code>lock_fx_forward</code></td><td class="num">186</td></tr>
           <tr><td><code>COMPLIANCE_ONLY</code>, <code>DANGEROUS_COMPLETION</code> — the gate's regexes</td><td>tuned to Claude's phrasing</td><td class="num">190–191</td></tr>
-          <tr><td>canned RM reply</td><td>"Sure, Mr. Bakri — tap <strong>{label}</strong> below …"</td><td class="num">196</td></tr>
+          <tr><td>RM gate template reply</td><td>"Sure, Mr. Bakri — tap <strong>{label}</strong> below …"</td><td class="num">196</td></tr>
           <tr><td>system block assembly</td><td><code>buildSystemBlocks()</code></td><td class="num">94</td></tr>
         </tbody>
       </table></div>
@@ -486,7 +506,7 @@ tools/&lt;file&gt;.ts   export async function get_x(args) { … }         <span 
     </section>
 
     <section id="s7">
-      <h2><span class="n">07</span><span>Gotchas you will hit in the first week</span></h2>
+      <h2><span class="n">07</span><span>Known issues you will meet in the first week</span></h2>
       <ol class="gotchas">
         <li><span><strong>The Sankey panel is scripted</strong> (F8). Don't demo it as "live tool calls" unless you wire it to <code>tool_calls[]</code>.</span></li>
         <li><span><strong>The model can write.</strong> <code>record_user_action</code> is callable by the model; the RM gate changes the reply text, not the tool call. Rows land as <code>pending_rm_review</code>, so nothing is "executed", but audit it.</span></li>
@@ -569,7 +589,7 @@ sequenceDiagram
     alt stop_reason = tool_use
       LLM-->>Loop: tool_use blocks
       par each block
-        Loop->>Loop: suggest_action? → whitelist(12) → actions[]
+        Loop->>Loop: suggest_action? → allow-list(12) → actions[]
         Loop->>Tools: dispatchTool(name, input)
         Tools->>DB: select … lte(asOf)
         DB-->>Tools: rows
@@ -578,7 +598,7 @@ sequenceDiagram
       Loop->>Loop: messages += assistant tool_use + user tool_result
     else stop_reason = end_turn
       LLM-->>Loop: text
-      Loop->>Loop: RM gate: gated action ∧ (completion claim ∨ boilerplate) → canned text
+      Loop->>Loop: RM gate: gated action ∧ (completion claim ∨ boilerplate) → template text
     end
   end
   Loop-->>API: {reply, tool_calls[], actions[], stop_reason}
@@ -596,7 +616,7 @@ stateDiagram-v2
   state "intro · Thu 13 Aug 22:00" as intro
   state "act1" as act1 {
     direction LR
-    a1s1: 1 · Fri 14 Aug 09:00<br/>Monday brief push
+    a1s1: 1 · Fri 14 Aug 09:00<br/>weekly brief push
     a1s2: 2 · 10:30<br/>FX trigger + Bloomberg<br/>[Lock now]
     a1s3: 3 · 10:33<br/>Request received<br/>REQ-FXFW-2026-7142
     a1s1 --> a1s2: Next
@@ -699,7 +719,7 @@ erDiagram
           <tr><td><code>check_fx_opportunity</code></td><td>—</td><td><code>{ trigger_fires, reason, payload{forecast, fx} }</code> fires when an EUR forecast ≤ 14d exists <strong>and</strong> current mid ≥ 2.0 % above 90-day avg</td><td>via <code>get_forecasted_payments(14)</code>; <code>bank_fx_rates</code> EOD</td><td></td><td>✓</td></tr>
           <tr><td><code>check_flexicash_opportunity</code></td><td>—</td><td><code>{ trigger_fires, reason, payload{projection, offer} }</code> fires when <code>projected_dip_below_threshold</code> <strong>and</strong> an open FlexiCash offer</td><td>via <code>get_cashflow_projection(21)</code>, <code>get_preapproved_offers()</code></td><td></td><td>✓</td></tr>
           <tr><td><code>list_products_by_category</code></td><td><code>category</code> ✱</td><td><code>{ category, count, products[] }</code></td><td><code>bank_product_catalog</code></td><td></td><td></td></tr>
-          <tr><td><code>find_products_by_use_case</code></td><td><code>use_case_tag</code> ✱, <code>complexity_level</code> (=4)</td><td><code>{ use_case_tag, complexity_level, count, products[] }</code> tag match and level within min/max</td><td><code>bank_product_catalog</code></td><td></td><td></td></tr>
+          <tr><td><code>find_products_by_use_case</code></td><td><code>use_case_tag</code> ✱, <code>complexity_level</code> (=4 — the customer's SME maturity tier, 1–5)</td><td><code>{ use_case_tag, complexity_level, count, products[] }</code> products carrying the tag whose suitable tier range (<code>min/max_complexity_level</code>) includes the customer's tier</td><td><code>bank_product_catalog</code></td><td></td><td></td></tr>
           <tr><td><code>get_product_details</code></td><td><code>product_id</code> ✱</td><td><code>{ product }</code> full row or null</td><td><code>bank_product_catalog</code></td><td></td><td></td></tr>
           <tr><td><code>get_product_pricing</code></td><td><code>product_id</code> ✱, <code>tenor</code></td><td><code>{ product_id, requested_tenor, as_of, pricing[] }</code> latest rows ≤ clock, max 20</td><td><code>bank_product_pricing_daily</code></td><td></td><td>✓</td></tr>
           <tr><td><code>get_bloomberg_market_context</code></td><td><code>fx_pair</code> ✱, <code>as_of_iso</code> ✱</td><td>one snapshot: headline, summary, url, published_at, <code>fx_rate_mid</code>, <code>historical_percentile_90d</code> …; a "No market data" stub if none ≤ <code>as_of_iso</code></td><td><code>bloomberg_market_snapshots</code></td><td></td><td>✓ (from arg)</td></tr>
