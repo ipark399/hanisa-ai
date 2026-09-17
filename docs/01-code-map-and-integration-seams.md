@@ -79,7 +79,7 @@ w04/                                   lines  role
 
 1. `page.tsx` is the only file that knows the storyboard. The server does not know which step the demo is on unless the client tells it (`step_context`).
 2. The server has no session store. `SESSION_ID` is a constant string in `page.tsx`; the DB holds exactly one customer's state.
-3. Every DB read is filtered by a "demo clock" (`asOfIso`) that the client sends per request. Send the wrong clock and the agent reads the wrong month.
+3. Every date-dependent read (11 of the 23 handlers — balances, transactions, forecasts, pricing, market snapshot, triggers) is filtered by a "demo clock" (`asOfIso`) that the client sends per request. Send the wrong clock and the agent reads the wrong month. The other 12 read current state (limits, offers, holdings, profile, catalog) regardless of clock.
 
 ---
 
@@ -322,3 +322,221 @@ Creates the `@supabase/supabase-js` client with the **service-role** key (bypass
 5. **Playwright asserts display dates** (`Jul …`) from an earlier data shift; 6 of 9 tests fail until the assertions read from `STEPS[]`.
 6. **Data is dated.** Every table is anchored to Act 1 = 2026-08-14 / Act 2 = 2026-09-01. `scripts/shift_demo_dates.mjs <days>` moves it; the four code files that carry literal dates are listed in `docs/04-runbook.md`.
 7. **The `/api/action` confirmation text costs one model call the UI throws away.** Delete the call or use the text.
+
+---
+
+## 8. Diagrams
+
+Four views, all Mermaid so they render on GitHub and diff in git. Six earlier diagrams (concept, storyline, tables) live in `docs/demo/*.mmd`.
+
+### 8.1 Containers and the three entry paths
+
+```mermaid
+flowchart LR
+  classDef client fill:#F6F5F2,stroke:#6B675F,color:#1B1A17
+  classDef server fill:#FBF3F2,stroke:#B3261E,color:#1B1A17
+  classDef store  fill:#EFEDE7,stroke:#6B675F,color:#1B1A17
+  classDef ext    fill:#FFFFFF,stroke:#6B675F,color:#1B1A17,stroke-dasharray:4 3
+
+  subgraph B["Browser · page.tsx"]
+    direction TB
+    SB["demo_storyboard.ts<br/>STEPS[8] · asOfIso per step"]:::client
+    N["[Next ▶]<br/>render STEPS[n].newMessages"]:::client
+    BT["[button tap]<br/>STORYBOARD_ACTION_MAP"]:::client
+    FQ["[Free QA text]<br/>freeQAHistory + step_context"]:::client
+    SB --> N
+    SB --> BT
+    SB --> FQ
+  end
+
+  subgraph S["Next.js route handlers · server only"]
+    direction TB
+    A["/api/action<br/>record_user_action()"]:::server
+    C["/api/chat<br/>runChat() · chat_loop.ts"]:::server
+    R["/api/reset-demo"]:::server
+    T["/api/triggers<br/>debug, UI never calls"]:::server
+    CLK["runWithDemoAsOf(asOfIso)<br/>AsyncLocalStorage clock"]:::server
+    A --- CLK
+    C --- CLK
+  end
+
+  DB[("Supabase Postgres<br/>26 tables · service-role")]:::store
+  LLM["Anthropic API<br/>claude-opus-4-8"]:::ext
+  TOOLS["lib/tools/ · 23 handlers"]:::server
+
+  N -. "no request" .-> N
+  BT -- "as_of_iso" --> A
+  FQ -- "messages + step_context" --> C
+  A --> DB
+  C --> TOOLS --> DB
+  C <--> LLM
+  R --> DB
+  T --> TOOLS
+```
+
+### 8.2 One Free-QA turn
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant UI as page.tsx
+  participant API as /api/chat
+  participant Loop as runChat()
+  participant LLM as Claude
+  participant Tools as lib/tools
+  participant DB as Postgres
+
+  UI->>API: POST {messages (Free-QA only), session_id, step_context{asOfIso, recentPushText…}}
+  API->>API: runWithDemoAsOf(asOfIso)
+  API->>DB: INSERT bank_interactions (user turn)
+  API->>Loop: runChat(history, step_context)
+  Loop->>Loop: system = persona(cached) + clock + scenario + recent push
+  loop up to 6 times
+    Loop->>LLM: messages.create({system, tools[24], messages})
+    alt stop_reason = tool_use
+      LLM-->>Loop: tool_use blocks
+      par each block
+        Loop->>Loop: suggest_action? → whitelist(12) → actions[]
+        Loop->>Tools: dispatchTool(name, input)
+        Tools->>DB: select … lte(asOf)
+        DB-->>Tools: rows
+        Tools-->>Loop: JSON (or {error})
+      end
+      Loop->>Loop: messages += assistant tool_use + user tool_result
+    else stop_reason = end_turn
+      LLM-->>Loop: text
+      Loop->>Loop: RM gate: gated action ∧ (completion claim ∨ boilerplate) → canned text
+    end
+  end
+  Loop-->>API: {reply, tool_calls[], actions[], stop_reason}
+  API->>DB: INSERT bank_interactions (agent turn)
+  API-->>UI: JSON
+  UI->>UI: render reply · actions[] as buttons · append to freeQAHistory
+```
+
+### 8.3 Storyboard state machine
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  [*] --> intro
+  state "intro · Thu 13 Aug 22:00" as intro
+  state "act1" as act1 {
+    direction LR
+    a1s1: 1 · Fri 14 Aug 09:00<br/>Monday brief push
+    a1s2: 2 · 10:30<br/>FX trigger + Bloomberg<br/>[Lock now]
+    a1s3: 3 · 10:33<br/>Request received<br/>REQ-FXFW-2026-7142
+    a1s1 --> a1s2: Next
+    a1s2 --> a1s3: Next
+    a1s2 --> a1s3: tap Lock now<br/>→ POST /api/action
+  }
+  state "act2" as act2 {
+    direction LR
+    a2s1: 1 · Tue 1 Sep 15:00<br/>FlexiCash trigger<br/>[Apply] [Show me options]
+    a2s2: 2 · 15:01<br/>loan comparison 6.5% vs 8.0%
+    a2s3: 3 · 15:03<br/>Request received<br/>REQ-FLX-2026-2284
+    a2s4: 4 · 15:05<br/>learning · 3 Free-QA turns
+    a2s1 --> a2s2: Next / tap Show me options
+    a2s2 --> a2s3: Next
+    a2s1 --> a2s3: tap Apply<br/>→ POST /api/action
+    a2s3 --> a2s4: Next
+  }
+  intro --> act1: Next
+  act1 --> act2: Next (after step 3)
+  act1 --> free: type in Free QA
+  act2 --> free: type in Free QA
+  state "free · keeps current step's asOfIso" as free
+  free --> act1: Reset Act
+  free --> act2: Reset Act
+  act2 --> intro: Reset All
+  act1 --> intro: Reset All
+```
+
+Every step carries its own `asOfIso`; Free QA inherits the step it was typed on. Reset Act rewinds the current act to step 1; Reset All returns to intro; neither touches the DB — that is Reset DB (`/api/reset-demo`).
+
+### 8.4 Tables and their keys
+
+```mermaid
+erDiagram
+  bank_customers ||--o{ bank_accounts : owns
+  bank_customers ||--o{ bank_balances_daily : has
+  bank_accounts  ||--o{ bank_balances_daily : "EOD snapshot (unique per account+date)"
+  bank_customers ||--o{ bank_transactions : has
+  bank_accounts  ||--o{ bank_transactions : posts
+  bank_customers ||--o{ bank_scheduled_payments : registers
+  bank_accounts  ||--o{ bank_scheduled_payments : debits
+  bank_transactions |o--o| bank_scheduled_payments : "linked_transaction_id"
+  bank_customers ||--o{ bank_products_held : holds
+  bank_product_catalog ||--o{ bank_products_held : "product_id"
+  bank_accounts  |o--o{ bank_products_held : "account_id (nullable)"
+  bank_products_held ||--o{ bank_credit_limits : "product_holding_id"
+  bank_customers ||--o{ bank_credit_limits : has
+  bank_credit_limits ||--o{ bank_credit_drawdowns : "credit_limit_id"
+  bank_customers ||--o{ bank_preapproved_offers : receives
+  bank_product_catalog ||--o{ bank_product_pricing_daily : "pricing_date rows"
+  bank_customers ||--o{ bank_products_history : has
+  bank_customers ||--o{ bank_rm_assignments : has
+  bank_customers ||--o{ bank_interactions : "chat + click log"
+  bank_fx_rates {
+    text pair
+    timestamptz ts
+  }
+  bloomberg_market_snapshots {
+    text fx_pair
+    timestamptz as_of_timestamp
+  }
+
+  bank_customers ||--o{ infer_counterparties : "resolved from counterparty_raw_text"
+  bank_transactions ||--|| infer_transaction_enrichment : "PK = transaction_id"
+  infer_counterparties |o--o{ infer_transaction_enrichment : "inferred_counterparty_id"
+  bank_customers ||--o{ infer_forecasted_payments : has
+  infer_counterparties |o--o{ infer_forecasted_payments : "based_on_counterparty_id"
+  bank_customers ||--o{ infer_expected_inflows : has
+  infer_counterparties |o--o{ infer_expected_inflows : "based_on_counterparty_id"
+  bank_customers ||--o{ infer_cashflow_projection : "pre-batched snapshots"
+  bank_customers ||--|| infer_company_profile : "one per customer"
+  bank_customers ||--o{ infer_seasonality : has
+  bank_customers ||--o{ infer_user_preferences : "learned, user_explicit"
+  bank_interactions ||--|| infer_interaction_enrichment : "PK = interaction_id"
+  bank_customers ||--o{ infer_learning_events : "audit trail"
+  bank_interactions |o--o{ infer_learning_events : "source_interaction_id"
+```
+
+`bank_*` (15) is what core banking would own; every `infer_*` (10) row carries `confidence`, `inferred_by`, `inferred_at`, `evidence_source`. `bank_fx_rates` and `bloomberg_market_snapshots` are firm-wide — no `customer_id`.
+
+---
+
+## 9. Tool catalog
+
+What the model can call, what it gets back, and where the data comes from. `clock` = the handler filters by `getDemoCurrentTimestamp()`. `writes` = the handler inserts or updates. Argument defaults are the handler's, not the schema's.
+
+| tool | arguments | returns (top-level) | reads | writes | clock |
+|---|---|---|---|---|---|
+| `get_current_balance` | — | `{ as_of, balances[] }` — latest EOD `closing_balance` per non-closed account | `bank_accounts`, `bank_balances_daily` | | ✓ |
+| `get_account_list` | — | `{ accounts[] }` non-closed, primary first | `bank_accounts` | | |
+| `get_scheduled_payments` | `from_date` (=today), `to_date` (=+30d) | `{ window, count, scheduled_payments[] }` excludes `cancelled` | `bank_scheduled_payments` | | ✓ |
+| `get_recent_transactions` | `days` (=30), `currency` | `{ window, count, transactions[] }` each with `inferred_counterparty_id`, `inferred_category`; max 200 rows | `bank_transactions`, `infer_transaction_enrichment` | | ✓ |
+| `get_products_held` | — | `{ count, products_held[] }` `status = active` only — `pending_rm_review` rows are invisible here | `bank_products_held` | | |
+| `get_forecasted_payments` | `days_ahead` (=30), `currency` | `{ window, count, forecasts[] }` each with `counterparty{resolved_name, country, industry}`; `status = active` | `infer_forecasted_payments`, `infer_counterparties` | | ✓ |
+| `get_expected_inflows` | `days_ahead` (=30), `include_overdue` (=true) | `{ window, count, inflows[] }` each with `counterparty_name`, `days_overdue` | `infer_expected_inflows`, `infer_counterparties` | | ✓ |
+| `get_cashflow_projection` | `horizon_days` (=7) | `{ requested_horizon_days, projection, note }` — picks the pre-batched snapshot whose horizon is closest; does not compute | `infer_cashflow_projection` | | ✓ |
+| `get_company_profile` | — | `{ kyc_declared, inferred }` latest `version` | `infer_company_profile`, `bank_customers` | | |
+| `get_seasonality` | — | `{ count, patterns[] }` by confidence desc | `infer_seasonality` | | |
+| `get_top_counterparties` | `type`, `limit` (=5) | `{ type_filter, count, counterparties[] }` by `avg_amount` desc, active only | `infer_counterparties` | | |
+| `get_credit_limits` | — | `{ count, limits[] }` each with `product_name` joined from holdings; `status = active` only | `bank_credit_limits`, `bank_products_held` | | |
+| `get_preapproved_offers` | — | `{ count, offers[] }` `status = open` only, includes `offer_terms` | `bank_preapproved_offers` | | |
+| `check_monday_brief` | — | `{ trigger_fires: true, as_of, payload{net_inflow_myr, net_outflow_myr, overdue_receivables[], fx_delta_eur_myr_pct} }` always fires | via `get_cashflow_projection(7)`, `get_expected_inflows(14)`; `bank_fx_rates` last 4 EOD | | ✓ |
+| `check_fx_opportunity` | — | `{ trigger_fires, reason, payload{forecast, fx} }` fires when an EUR forecast ≤ 14d exists **and** current mid ≥ 2.0 % above 90-day avg | via `get_forecasted_payments(14)`; `bank_fx_rates` EOD | | ✓ |
+| `check_flexicash_opportunity` | — | `{ trigger_fires, reason, payload{projection, offer} }` fires when `projected_dip_below_threshold` **and** an open FlexiCash offer | via `get_cashflow_projection(21)`, `get_preapproved_offers()` | | ✓ |
+| `list_products_by_category` | `category` ✱ | `{ category, count, products[] }` | `bank_product_catalog` | | |
+| `find_products_by_use_case` | `use_case_tag` ✱, `complexity_level` (=4) | `{ use_case_tag, complexity_level, count, products[] }` tag match and level within min/max | `bank_product_catalog` | | |
+| `get_product_details` | `product_id` ✱ | `{ product }` full row or null | `bank_product_catalog` | | |
+| `get_product_pricing` | `product_id` ✱, `tenor` | `{ product_id, requested_tenor, as_of, pricing[] }` latest rows ≤ clock, max 20 | `bank_product_pricing_daily` | | ✓ |
+| `get_bloomberg_market_context` | `fx_pair` ✱, `as_of_iso` ✱ | one snapshot: headline, summary, url, published_at, `fx_rate_mid`, `historical_percentile_90d` … ; a "No market data" stub if none ≤ `as_of_iso` | `bloomberg_market_snapshots` | | ✓ (from arg) |
+| `record_user_action` | `action_type` ✱, `referenced_entity_type`, `referenced_entity_id`, `details` | `{ recorded, interaction_id, action_type, …domain }` | `bank_preapproved_offers` (for apply) | `bank_interactions`; lock → `bank_scheduled_payments`; apply → `bank_preapproved_offers`, `bank_products_held`, `bank_credit_limits` | ✓ (stamps) |
+| `record_learning_event` | `event_type` ✱, `target_table`, `preference_key`, `preference_value`, `before_value`, `after_value`, `source_interaction_id` | `{ recorded, event_id, preference_id? }` — `confirmed_by_user` is always `true` | | `infer_learning_events`; `preference_changed` → also `infer_user_preferences` | ✓ (stamps) |
+| `suggest_action` | `label` ✱, `action_id` ✱, `variant`, `payload` | never dispatched — `chat_loop.ts` turns it into `actions[]` after checking `ALLOWED_LLM_ACTIONS`; the model receives `{ ok }` or `{ ok: false, reason }` | | | |
+
+✱ required in the schema. 23 handlers + `suggest_action` = 24 schemas.
+
+Two shortcuts a production version would replace: `get_cashflow_projection` returns a stored snapshot instead of computing one, and `check_monday_brief` never evaluates whether it is Monday.
