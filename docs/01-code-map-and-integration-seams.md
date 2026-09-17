@@ -85,11 +85,11 @@ w04/                                   lines  role
 
 ## 2. Runtime map, as built
 
-Layered the way an agent platform is usually drawn — strategy, planning, execution, platform — so the gaps read as clearly as the parts. `◆` marks a behaviour the code enforces; everything else is prompt text or convention.
+Drawn in four bands — conversation, triggers, data, platform — so what the demo has and what it lacks read together. `◆` marks a behaviour the code enforces; everything else is prompt text or convention.
 
 ```
 2026 · CIMB CFO AGENT · AS BUILT (commit 1b5916a)
-STRATEGY
+CONVERSATION
 ┌──────────────┐ tap · type ┌──────────────────────────────────────────────────┐    ┌──────────────────────────────┐
 │  SME owner   │───────────►│ Demo shell · page.tsx (client)                   │    │ Memory (DB rows)             │
 │  Ahmad only  │            │ storyboard 8 steps · asOfIso per step            │    │ infer_user_preferences       │
@@ -104,7 +104,7 @@ STRATEGY
                             │ Push / Pull · tool loop ≤ 6 · 24 tool schemas    │    │ 3-turn gate not enforced     │
                             │ ◆ allow-list 12 · ◆ RM gate (2 regex)            │    └──────────────────────────────┘
                             └───────────────────────┬──────────────────────────┘
-PLANNING · triggers 3 (live tools — the storyboard pushes on screen are scripted text)
+TRIGGERS · 3 functions (live tools — the storyboard pushes on screen are scripted text)
                ┌────────────────────────────────────┼─────────────────────────────────┐
                ▼                                    ▼                                 ▼
 ┌──────────────────────────┐        ┌──────────────────────────┐        ┌──────────────────────────┐
@@ -112,7 +112,7 @@ PLANNING · triggers 3 (live tools — the storyboard pushes on screen are scrip
 │ always fires · 7d proj   │        │ EUR forecast ≤ 14d  AND  │        │ dip flag (21d proj) AND  │
 │ overdue · 3-day FX delta │        │ mid ≥ 2.0% over 90d avg  │        │ open FlexiCash offer     │
 └────────────┬─────────────┘        └────────────┬─────────────┘        └────────────┬─────────────┘
-EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 2 write    │
+DATA         │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 2 write    │
 ┌────────────▼─────────────┐        ┌────────────▼─────────────┐        ┌────────────▼─────────────┐
 │ bank_* · 15 tables       │        │ bloomberg_market_        │        │ bank_product_catalog     │
 │ accounts · balances ·    │        │ snapshots · 2 rows       │        │ pricing_daily · offers   │
@@ -132,12 +132,12 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
 ┆ Audit   every user / agent turn → bank_interactions · tool_calls[] returned to page, not persisted   ┆
 ┆ Hosting Vercel (web) · Supabase free tier — pauses after 7 idle days · service-role key · no RLS     ┆
 └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
-· 1 loop, not 3 tiers · one session · one customer · demo clock per step · scripted + improvised · evaluation by hand
+· 1 loop, no delegation · one session · one customer · demo clock per step · scripted + improvised · evaluation by hand
 ```
 
 Three things to read off it:
 
-1. **The PLANNING layer is three functions, not three agents.** There is no delegation; `chat_loop.ts` calls them as tools. Hence "1 loop, not 3 tiers".
+1. **The trigger band is three functions, not three agents.** There is no delegation; `chat_loop.ts` calls them as tools. Hence "1 loop, no delegation".
 2. **The two right-hand boxes differ in strength.** Memory exists as DB rows. The learning loop's "confirm before save" is a persona sentence, so it carries no `◆`.
 3. **The platform band is thin.** No gateway, no rate limit, no cost attribution, no tracing store — only per-turn audit rows and a prompt cache.
 
