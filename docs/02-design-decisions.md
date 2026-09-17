@@ -22,9 +22,7 @@ The one-line version: **the model does the talking, the code enforces the rules,
 | **Model risk can be reviewed** | No framework, no abstraction layer. The agent's behaviour is 610 lines across five files — persona, tool definitions, the loop, the model client, the data client. A risk function can read all of it. Changing the model touches five files; changing what the agent may say touches one. | `lib/persona.ts`, `tool_schemas.ts`, `chat_loop.ts`, `anthropic.ts`, `supabase.ts` |
 | **Behaviour can be replayed** | Every scripted step carries its own timestamp, and the server pins that timestamp for the whole request. The same question on the same step reads the same data, today or in six months, which is what a reviewer needs to reproduce an answer. | `demo_storyboard.ts` `asOfIso` · `supabase.ts` `runWithDemoAsOf` |
 
-### The principle this build learned the hard way
-
-Compliance language was first placed in the prompt: "do not say the request is activated", "confirm before you commit". Over the build it regressed five times — four persona edits and one loop-level nudge — each time fixing one scripted answer and breaking another. The rule that survived is:
+### The principle
 
 > **Tone belongs in the prompt. Rules belong in code.**
 

@@ -795,8 +795,7 @@ erDiagram
         </tbody>
       </table></div>
 
-      <h3 id="d2p">The principle this build learned the hard way</h3>
-      <p>Compliance language was first placed in the prompt: "do not say the request is activated", "confirm before you commit". Over the build it regressed five times — four persona edits and one loop-level nudge — each time fixing one scripted answer and breaking another. The rule that survived is:</p>
+      <h3 id="d2p">The principle</h3>
       <p class="principle">Tone belongs in the prompt. Rules belong in code.</p>
       <p>Concretely: the persona decides how the agent addresses the customer and how it phrases an option; the code decides which buttons may appear (an allow-list of twelve action ids), what a completion claim looks like (two regular expressions), what time it is (a per-request clock), and what status a written row may have (<code>pending_rm_review</code>, always). A probabilistic layer is never the last line of defence for a regulated behaviour. This is the first decision to carry into any re-implementation.</p>
     </section>
