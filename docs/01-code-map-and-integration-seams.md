@@ -21,6 +21,8 @@ Project words that are not industry terms, defined once. Code identifiers keep t
 | **`pending_rm_review`** | The only status a Lock or Apply can write. A relationship manager finalises the request outside the agent. |
 | **allow-list** | The 12 action ids the model may attach to a reply as a button (`ALLOWED_LLM_ACTIONS`). Anything else is dropped. |
 | **SME maturity tier** | A 1–5 band from CIMB's SME maturity model. Products carry the tier range they suit (`min/max_complexity_level`); the customer's inferred tier (4) filters recommendations. It is a product-suitability band, not a credit rating. |
+| **RM** | Relationship manager — the bank employee who finalises any request the agent records. |
+| **the model / the agent** | *The model* is the language model (`claude-opus-4-8`). *The agent* is the whole system: model, persona, tools, gates and data. |
 
 ---
 
@@ -35,7 +37,7 @@ w04/                                   lines  role
 │   │   ├── layout.tsx                   14   HTML shell.
 │   │   ├── globals.css                 636   WhatsApp-style theme.
 │   │   └── api/                              SERVER. Keep these; they are your integration surface.
-│   │       ├── chat/route.ts            81   POST /api/chat     — the agent (LLM loop)
+│   │       ├── chat/route.ts            81   POST /api/chat     — the agent (model loop)
 │   │       ├── action/route.ts          73   POST /api/action   — button side-effects (DB writes)
 │   │       ├── reset-demo/route.ts      91   POST /api/reset-demo — wipe demo residue
 │   │       └── triggers/route.ts        84   POST /api/triggers — debug only, UI never calls it
@@ -51,11 +53,11 @@ w04/                                   lines  role
 │   │   ├── chat_loop.ts                272   runChat(): system prompt assembly, tool loop,
 │   │   │                                     suggest_action allow-list, RM gate
 │   │   ├── persona.ts                   56   System prompt text (tone, modes, rules)
-│   │   ├── tool_schemas.ts             255   The 24 tool definitions the LLM sees
+│   │   ├── tool_schemas.ts             255   The 24 tool definitions the model sees
 │   │   ├── anthropic.ts                 27   SDK client, MODEL_ID, prompt-cache helper
 │   │   ├── supabase.ts                  39   DB client (service role) + the demo clock
 │   │   ├── demo_storyboard.ts          576   CLIENT data: 8 scripted steps, per-step asOfIso
-│   │   └── tools/                            23 handlers = what the LLM can actually do
+│   │   └── tools/                            23 handlers = what the model can actually do
 │   │       ├── index.ts                 58   TOOL_HANDLERS registry + dispatchTool()
 │   │       ├── balance.ts               48   get_current_balance, get_account_list
 │   │       ├── transactions.ts          66   get_recent_transactions, get_scheduled_payments
@@ -241,7 +243,7 @@ Response:
     "recorded": true, "interaction_id": "int_…", "action_type": "accept_preapproved_offer",
     "activation_ref": "FLX-2026-9285", "approved_amount": 65000, "currency": "MYR", "interest_rate_pa": 6.5
   },
-  "confirmation_message": "Request received. Reference: REQ-FLX-2026-9285. …"   // LLM-written; the current UI IGNORES it
+  "confirmation_message": "Request received. Reference: REQ-FLX-2026-9285. …"   // model-written; the current front end does not use it
 }
 ```
 
@@ -283,12 +285,12 @@ If you replace `page.tsx`, this is the behaviour that lives there and nowhere el
 | F1 | The 8-step script: text, timestamps, `asOfIso`, action buttons, right-panel content | `lib/demo_storyboard.ts` `STEPS[]` | Yes — this **is** the demo. Port the data, not the React. |
 | F2 | Clock threading: send `STEPS[n].asOfIso` as `step_context.asOfIso` on every `/api/chat`, and as `as_of_iso` on `/api/action` | `page.tsx` `handleSendMessage`, `STORYBOARD_ACTION_MAP.apiCall` | Yes, non-negotiable |
 | F3 | History policy: `messages` = Free-QA turns only; current push goes in `recentPushText` | `page.tsx` `freeQAHistory` | Yes |
-| F4 | Button routing: `STORYBOARD_ACTION_MAP` maps 3 ids to (act, step, optional API call); any other `action_id` (i.e. model-suggested) becomes a Free-QA message `"Please walk me through: <label>."` | `page.tsx` `handleAction` | Yes for the 3 mapped ids; the fallback phrasing is yours to improve |
+| F4 | Button routing: `STORYBOARD_ACTION_MAP` maps 3 ids to (act, step, optional API call); any other `action_id` (i.e. model-suggested) becomes a Free-QA message `"Please walk me through: <label>."` | `page.tsx` `handleAction` | Yes for the 3 mapped ids; the fallback phrasing may be changed |
 | F5 | Rendering `actions[]` from `/api/chat` as tappable buttons inside the reply bubble | `MessageBubble.tsx` | Yes, or model-suggested buttons vanish |
 | F6 | Disabling a button after one tap | `page.tsx` `disabledActions` | Recommended; the server does not de-duplicate |
 | F7 | Reset Act / Reset All (client state) and Reset DB (`/api/reset-demo`) | `DemoControls.tsx` | Reset DB yes; the other two are client concerns |
-| F8 | Right panel Zone 3 "Tool & DB Trace" — drawn from `STEPS[n].toolTrace`, a **scripted** array. The real `tool_calls[]` from `/api/chat` is not used | `SankeyTrace.tsx` | Your call. Wiring it to the real `tool_calls[]` would make it honest. |
-| F9 | `SESSION_ID = "demo_session_001"` constant | `page.tsx` | Replace with a per-viewer id if two people may demo at once — but note the DB still holds one customer's state, so concurrent runs will still collide on `reset-demo` and pending rows |
+| F8 | Right panel Zone 3 "Tool & DB Trace" — drawn from `STEPS[n].toolTrace`, a **scripted** array. The real `tool_calls[]` from `/api/chat` is not used | `SankeyTrace.tsx` | Decide. Wiring it to the real `tool_calls[]` would show the calls actually made. |
+| F9 | `SESSION_ID = "demo_session_001"` constant | `page.tsx` | Decide. Replace with an id per browser session if two people may demo at once — but the DB still holds one customer's state, so concurrent runs will still collide on `reset-demo` and pending rows |
 
 The storyboard action map, verbatim:
 
@@ -303,7 +305,7 @@ show_loan_options        → act2, step 2, no API call
 
 ## 5. Agent configuration seams (server side)
 
-Everything the agent *is* sits in five files under `web/lib/`. They are deliberately plain: no framework, no abstraction layer, one SDK call.
+Everything the agent *is* sits in five files under `web/lib/`. They are intentionally simple: no framework, no abstraction layer, one SDK call.
 
 ### 5.1 `persona.ts` — what the agent is like
 
@@ -380,11 +382,11 @@ Creates the `@supabase/supabase-js` client with the **service-role** key (bypass
 
 1. **The Sankey panel is scripted** (F8). Don't demo it as "live tool calls" unless you wire it to `tool_calls[]`.
 2. **The model can write.** `record_user_action` is callable by the model; the RM gate changes the reply text, not the tool call. Rows land as `pending_rm_review`, so nothing is "executed", but audit it.
-3. **The RM gate regexes are Claude-specific.** A different model's phrasing may slip past or trip them.
+3. **The RM gate regexes are Claude-specific.** A different model's phrasing may fail to match them, or match when it should not.
 4. **One shared session, one customer.** Two simultaneous demos overwrite each other's pending rows and reset each other.
 5. **Playwright asserts display dates** (`Jul …`) from an earlier data shift; 6 of 9 tests fail until the assertions read from `STEPS[]`.
 6. **Data is dated.** Every table is anchored to Act 1 = 2026-08-14 / Act 2 = 2026-09-01. `scripts/shift_demo_dates.mjs <days>` moves it; the four code files that carry literal dates are listed in `docs/04-runbook.md`.
-7. **The `/api/action` confirmation text costs one model call the UI throws away.** Delete the call or use the text.
+7. **The `/api/action` confirmation text costs one model call whose result the front end does not use.** Delete the call or use the text.
 
 ---
 
@@ -606,4 +608,4 @@ What the model can call, what it gets back, and where the data comes from. `cloc
 
 ✱ required in the schema. 23 handlers + `suggest_action` = 24 schemas.
 
-Two shortcuts a production version would replace: `get_cashflow_projection` returns a stored snapshot instead of computing one, and `check_monday_brief` never evaluates whether it is Monday.
+Two simplifications a production version would replace: `get_cashflow_projection` returns a stored snapshot instead of computing one, and `check_monday_brief` never evaluates whether it is Monday.

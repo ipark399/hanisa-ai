@@ -144,16 +144,27 @@
   .gotchas li::before { content: counter(g); font-family: var(--mono); color: var(--warn); font-weight: 600; }
 
   footer { grid-column: 1 / -1; margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+
+  /* Tabs: one page, several handover documents. Each .doc contributes its
+     own contents column and main column to the page grid. */
+  .tabs { display: flex; gap: 6px; margin-top: 26px; border-bottom: 1px solid var(--line); }
+  .tab { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 10px 14px; font-family: var(--mono); font-size: 13px; letter-spacing: .04em; color: var(--muted); cursor: pointer; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: baseline; text-align: left; }
+  .tab .n { font-weight: 600; }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .doc { display: contents; }
+  .dochead { grid-column: 1 / -1; padding-block: 26px 4px; }
+  .dochead h2 { font-size: 24px; margin-bottom: 14px; display: block; }
+  .dochead .lede { font-size: 16px; }
+  .principle { max-width: 68ch; margin: 22px 0 16px; padding: 18px 22px; border-left: 3px solid var(--accent); background: var(--bg-note); font-family: var(--serif); font-size: 21px; line-height: 1.35; text-wrap: balance; }
   @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 </style>
 
 <div class="page">
   <header class="masthead">
-    <p class="eyebrow">Handover · Document 01</p>
-    <h1>CIMB CFO Agent — Code Map and Integration Seams</h1>
-    <p class="lede"><strong>Audience.</strong> The engineering team that will host this demo on its own platform, replace the front end, and possibly reconfigure the agent.</p>
-    <p class="lede"><strong>Scope.</strong> Where every file lives, what each one does, and exactly which contracts and seams you touch for (a) a new front end and (b) a changed agent.</p>
-    <p class="lede"><strong>Ground truth.</strong> Line counts and contracts were read from the code on 2026-09-17 at commit <code>1b5916a</code>. When this document and the code disagree, the code wins — then fix the document.</p>
+    <p class="eyebrow">Technical handover</p>
+    <h1>CIMB CFO Agent — Handover Documents</h1>
+    <p class="lede">For the engineering team that will host this demo on its own platform, replace the front end, and possibly reconfigure the agent. Every claim points at a file in the build at commit <code>1b5916a</code>; when a document and the code disagree, the code wins — then fix the document.</p>
     <div class="meta">
       <span>repo <b>cimb-cfo-agent</b></span>
       <span>app <b>Next.js 15 · App Router</b></span>
@@ -161,9 +172,21 @@
       <span>db <b>Postgres · 26 tables</b></span>
       <span>hand-written <b>3,666 lines TS</b></span>
     </div>
+    <div class="tabs" role="tablist" aria-label="Documents">
+      <button class="tab" role="tab" id="tab-01" aria-controls="doc-01" aria-selected="true" data-doc="doc-01"><span class="n">01</span><span>Code map and integration seams</span></button>
+      <button class="tab" role="tab" id="tab-02" aria-controls="doc-02" aria-selected="false" data-doc="doc-02"><span class="n">02</span><span>Design decisions</span></button>
+    </div>
   </header>
 
-  <nav class="toc" aria-label="Contents">
+  <div class="doc" id="doc-01" role="tabpanel" aria-labelledby="tab-01">
+  <div class="dochead">
+    <p class="eyebrow">Document 01</p>
+    <h2>Code Map and Integration Seams</h2>
+    <p class="lede"><strong>Scope.</strong> Where every file lives, what each one does, and exactly which contracts and seams you touch for (a) a new front end and (b) a changed agent.</p>
+    <p class="lede"><strong>Ground truth.</strong> Line counts and contracts were read from the code on 2026-09-17.</p>
+  </div>
+
+  <nav class="toc" aria-label="Contents of document 01">
     <p>Contents</p>
     <ol>
       <li><a href="#s0"><span class="n">·</span><span>Terms</span></a></li>
@@ -196,6 +219,8 @@
           <tr><td><strong><code>pending_rm_review</code></strong></td><td>The only status a Lock or Apply can write. A relationship manager finalises the request outside the agent.</td></tr>
           <tr><td><strong>allow-list</strong></td><td>The 12 action ids the model may attach to a reply as a button (<code>ALLOWED_LLM_ACTIONS</code>). Anything else is dropped.</td></tr>
           <tr><td><strong>SME maturity tier</strong></td><td>A 1–5 band from CIMB's SME maturity model. Products carry the tier range they suit (<code>min/max_complexity_level</code>); the customer's inferred tier (4) filters recommendations. It is a product-suitability band, not a credit rating.</td></tr>
+          <tr><td><strong>RM</strong></td><td>Relationship manager — the bank employee who finalises any request the agent records.</td></tr>
+          <tr><td><strong>the model / the agent</strong></td><td><em>The model</em> is the language model (<code>claude-opus-4-8</code>). <em>The agent</em> is the whole system: model, persona, tools, gates and data.</td></tr>
         </tbody>
       </table></div>
     </section>
@@ -211,7 +236,7 @@
 │   │   ├── layout.tsx                   14   <span class="role">HTML shell.</span>
 │   │   ├── globals.css                 636   <span class="role">WhatsApp-style theme.</span>
 │   │   └── api/                              <span class="role">SERVER. Keep these; they are your integration surface.</span>
-│   │       ├── chat/route.ts            81   <span class="role">POST /api/chat       — the agent (LLM loop)</span>
+│   │       ├── chat/route.ts            81   <span class="role">POST /api/chat       — the agent (model loop)</span>
 │   │       ├── action/route.ts          73   <span class="role">POST /api/action     — button side-effects (DB writes)</span>
 │   │       ├── reset-demo/route.ts      91   <span class="role">POST /api/reset-demo — wipe demo residue</span>
 │   │       └── triggers/route.ts        84   <span class="role">POST /api/triggers   — debug only, UI never calls it</span>
@@ -227,11 +252,11 @@
 │   │   ├── chat_loop.ts                272   <span class="role">runChat(): system prompt assembly, tool loop,</span>
 │   │   │                                     <span class="role">suggest_action allow-list, RM gate</span>
 │   │   ├── persona.ts                   56   <span class="role">System prompt text (tone, modes, rules)</span>
-│   │   ├── tool_schemas.ts             255   <span class="role">The 24 tool definitions the LLM sees</span>
+│   │   ├── tool_schemas.ts             255   <span class="role">The 24 tool definitions the model sees</span>
 │   │   ├── anthropic.ts                 27   <span class="role">SDK client, MODEL_ID, prompt-cache helper</span>
 │   │   ├── supabase.ts                  39   <span class="role">DB client (service role) + the demo clock</span>
 │   │   ├── <span class="hot">demo_storyboard.ts</span>          576   <span class="role">CLIENT data: 8 scripted steps, per-step asOfIso</span>
-│   │   └── tools/                            <span class="role">23 handlers = what the LLM can actually do</span>
+│   │   └── tools/                            <span class="role">23 handlers = what the model can actually do</span>
 │   │       ├── index.ts                 58   <span class="role">TOOL_HANDLERS registry + dispatchTool()</span>
 │   │       ├── balance.ts               48   <span class="role">get_current_balance, get_account_list</span>
 │   │       ├── transactions.ts          66   <span class="role">get_recent_transactions, get_scheduled_payments</span>
@@ -395,7 +420,7 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
     "recorded": true, "interaction_id": "int_…", "action_type": "accept_preapproved_offer",
     "activation_ref": "FLX-2026-9285", "approved_amount": 65000, "currency": "MYR", "interest_rate_pa": 6.5
   },
-  "confirmation_message": "Request received. Reference: REQ-FLX-2026-9285. …"   <span class="c">// LLM-written; the current UI IGNORES it</span>
+  "confirmation_message": "Request received. Reference: REQ-FLX-2026-9285. …"   <span class="c">// model-written; the current front end does not use it</span>
 }</code></pre>
       <p>Side effects by <code>action_type</code> (<code>lib/tools/actions.ts</code>):</p>
       <div class="tablewrap"><table>
@@ -429,12 +454,12 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
           <tr><td>F1</td><td>The 8-step script: text, timestamps, <code>asOfIso</code>, action buttons, right-panel content</td><td><code>lib/demo_storyboard.ts</code> <code>STEPS[]</code></td><td><span class="pill keep">keep</span> This <strong>is</strong> the demo. Port the data, not the React.</td></tr>
           <tr><td>F2</td><td>Clock threading: send <code>STEPS[n].asOfIso</code> as <code>step_context.asOfIso</code> on every <code>/api/chat</code>, and as <code>as_of_iso</code> on <code>/api/action</code></td><td><code>page.tsx</code> <code>handleSendMessage</code>, <code>STORYBOARD_ACTION_MAP.apiCall</code></td><td><span class="pill keep">keep</span> non-negotiable</td></tr>
           <tr><td>F3</td><td>History policy: <code>messages</code> = Free-QA turns only; current push goes in <code>recentPushText</code></td><td><code>page.tsx</code> <code>freeQAHistory</code></td><td><span class="pill keep">keep</span></td></tr>
-          <tr><td>F4</td><td>Button routing: <code>STORYBOARD_ACTION_MAP</code> maps 3 ids to (act, step, optional API call); any other <code>action_id</code> (i.e. model-suggested) becomes a Free-QA message <code>"Please walk me through: &lt;label&gt;."</code></td><td><code>page.tsx</code> <code>handleAction</code></td><td><span class="pill keep">keep</span> for the 3 mapped ids; the fallback phrasing is yours to improve</td></tr>
+          <tr><td>F4</td><td>Button routing: <code>STORYBOARD_ACTION_MAP</code> maps 3 ids to (act, step, optional API call); any other <code>action_id</code> (i.e. model-suggested) becomes a Free-QA message <code>"Please walk me through: &lt;label&gt;."</code></td><td><code>page.tsx</code> <code>handleAction</code></td><td><span class="pill keep">keep</span> for the 3 mapped ids; the fallback phrasing may be changed</td></tr>
           <tr><td>F5</td><td>Rendering <code>actions[]</code> from <code>/api/chat</code> as tappable buttons inside the reply bubble</td><td><code>MessageBubble.tsx</code></td><td><span class="pill keep">keep</span> or model-suggested buttons vanish</td></tr>
           <tr><td>F6</td><td>Disabling a button after one tap</td><td><code>page.tsx</code> <code>disabledActions</code></td><td><span class="pill rec">recommended</span> the server does not de-duplicate</td></tr>
           <tr><td>F7</td><td>Reset Act / Reset All (client state) and Reset DB (<code>/api/reset-demo</code>)</td><td><code>DemoControls.tsx</code></td><td><span class="pill keep">keep</span> Reset DB; the other two are client concerns</td></tr>
-          <tr><td>F8</td><td>Right panel Zone 3 "Tool &amp; DB Trace" — drawn from <code>STEPS[n].toolTrace</code>, a <strong>scripted</strong> array. The real <code>tool_calls[]</code> from <code>/api/chat</code> is not used</td><td><code>SankeyTrace.tsx</code></td><td><span class="pill your">your call</span> Wiring it to the real <code>tool_calls[]</code> would make it honest.</td></tr>
-          <tr><td>F9</td><td><code>SESSION_ID = "demo_session_001"</code> constant</td><td><code>page.tsx</code></td><td><span class="pill your">your call</span> Replace with a per-viewer id if two people may demo at once — but the DB still holds one customer's state, so concurrent runs will still collide on <code>reset-demo</code> and pending rows</td></tr>
+          <tr><td>F8</td><td>Right panel Zone 3 "Tool &amp; DB Trace" — drawn from <code>STEPS[n].toolTrace</code>, a <strong>scripted</strong> array. The real <code>tool_calls[]</code> from <code>/api/chat</code> is not used</td><td><code>SankeyTrace.tsx</code></td><td><span class="pill your">decide</span> Wiring it to the real <code>tool_calls[]</code> would show the calls actually made.</td></tr>
+          <tr><td>F9</td><td><code>SESSION_ID = "demo_session_001"</code> constant</td><td><code>page.tsx</code></td><td><span class="pill your">decide</span> Replace with an id per browser session if two people may demo at once — but the DB still holds one customer's state, so concurrent runs will still collide on <code>reset-demo</code> and pending rows</td></tr>
         </tbody>
       </table></div>
       <p>The storyboard action map, verbatim:</p>
@@ -446,7 +471,7 @@ show_loan_options        → act2, step 2, <span class="c">no API call</span></c
 
     <section id="s5">
       <h2><span class="n">05</span><span>Agent configuration seams (server side)</span></h2>
-      <p>Everything the agent <em>is</em> sits in five files under <code>web/lib/</code>. They are deliberately plain: no framework, no abstraction layer, one SDK call.</p>
+      <p>Everything the agent <em>is</em> sits in five files under <code>web/lib/</code>. They are intentionally simple: no framework, no abstraction layer, one SDK call.</p>
 
       <h3>5.1 <code>persona.ts</code> — what the agent is like</h3>
       <p>One exported string, 56 lines, cached as a prompt prefix. Sections: Tone and Style · Push vs Pull · Tool Use · Recommendation Rules · Compliance · Learning Behaviour · Identity. Edit text, redeploy.</p>
@@ -510,11 +535,11 @@ tools/&lt;file&gt;.ts   export async function get_x(args) { … }         <span 
       <ol class="gotchas">
         <li><span><strong>The Sankey panel is scripted</strong> (F8). Don't demo it as "live tool calls" unless you wire it to <code>tool_calls[]</code>.</span></li>
         <li><span><strong>The model can write.</strong> <code>record_user_action</code> is callable by the model; the RM gate changes the reply text, not the tool call. Rows land as <code>pending_rm_review</code>, so nothing is "executed", but audit it.</span></li>
-        <li><span><strong>The RM gate regexes are Claude-specific.</strong> A different model's phrasing may slip past or trip them.</span></li>
+        <li><span><strong>The RM gate regexes are Claude-specific.</strong> A different model's phrasing may fail to match them, or match when it should not.</span></li>
         <li><span><strong>One shared session, one customer.</strong> Two simultaneous demos overwrite each other's pending rows and reset each other.</span></li>
         <li><span><strong>Playwright asserts display dates</strong> (<code>Jul …</code>) from an earlier data shift; 6 of 9 tests fail until the assertions read from <code>STEPS[]</code>.</span></li>
         <li><span><strong>Data is dated.</strong> Every table is anchored to Act 1 = 2026-08-14 / Act 2 = 2026-09-01. <code>scripts/shift_demo_dates.mjs &lt;days&gt;</code> moves it; the four code files that carry literal dates are listed in <code>docs/04-runbook.md</code>.</span></li>
-        <li><span><strong>The <code>/api/action</code> confirmation text costs one model call the UI throws away.</strong> Delete the call or use the text.</span></li>
+        <li><span><strong>The <code>/api/action</code> confirmation text costs one model call whose result the front end does not use.</strong> Delete the call or use the text.</span></li>
       </ol>
     </section>
 
@@ -728,10 +753,90 @@ erDiagram
           <tr><td><code>suggest_action</code></td><td><code>label</code> ✱, <code>action_id</code> ✱, <code>variant</code>, <code>payload</code></td><td>never dispatched — <code>chat_loop.ts</code> turns it into <code>actions[]</code> after checking <code>ALLOWED_LLM_ACTIONS</code>; the model receives <code>{ ok }</code> or <code>{ ok: false, reason }</code></td><td></td><td></td><td></td></tr>
         </tbody>
       </table></div>
-      <p>23 handlers + <code>suggest_action</code> = 24 schemas. Two shortcuts a production version would replace: <code>get_cashflow_projection</code> returns a stored snapshot instead of computing one, and <code>check_monday_brief</code> never evaluates whether it is Monday.</p>
+      <p>23 handlers + <code>suggest_action</code> = 24 schemas. Two simplifications a production version would replace: <code>get_cashflow_projection</code> returns a stored snapshot instead of computing one, and <code>check_monday_brief</code> never evaluates whether it is Monday.</p>
     </section>
 
   </main>
+  </div>
 
-  <footer>Handover document 01 · facts read from commit 1b5916a on 2026-09-17 · companion: 00 Context · 02 Design Decisions · 03 Tech Stack &amp; Migration · 04 Runbook</footer>
+  <div class="doc" id="doc-02" role="tabpanel" aria-labelledby="tab-02" hidden>
+  <div class="dochead">
+    <p class="eyebrow">Document 02</p>
+    <h2>Design Decisions</h2>
+    <p class="lede"><strong>Audience.</strong> Engineers, risk and compliance reviewers who need to know <em>why</em> the agent is shaped the way it is before changing it.</p>
+    <p class="lede"><strong>Scope of this revision.</strong> Section 1 states the design principle and shows how the build answers the questions a bank asks of an AI system. Each individual decision record (framework, data split, gate placement, action allow-list, learning confirmation, date handling, hosting) follows in later sections of this document.</p>
+    <p class="lede"><strong>Ground truth.</strong> Every claim below points at a file or a row in the build. Where the build only partially implements a control, document 03 lists what must be hardened before production; this section describes the shape, not the depth.</p>
+  </div>
+
+  <nav class="toc" aria-label="Contents of document 02">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#d2s1"><span class="n">1</span><span>Why this shape fits a bank</span></a></li>
+      <li><a href="#d2p"><span class="n">·</span><span>The principle</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <section id="d2s1">
+      <h2><span class="n">01</span><span>Why this shape fits a bank</span></h2>
+      <p>The one-line version: <strong>the model does the talking, the code enforces the rules, and a person makes the decision.</strong> Banks do not ask an AI system to be clever; they ask where a number came from, what stops it from acting alone, and who is accountable when it speaks. This build answers those three questions in its structure, not in its prompt.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>What a bank requires</th><th>How the build answers</th><th>Where to look</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Every figure traces to a system of record</strong></td><td>The model never produces a number itself. All 23 tool handlers read rows from the database and return them; the model reasons over what it was handed. Each turn returns <code>tool_calls[]</code> — the tools it ran, with inputs and results — so the chain from answer back to data is visible.</td><td><code>lib/tools/*.ts</code> · persona "Do not invent figures" · <code>/api/chat</code> response</td></tr>
+          <tr><td><strong>Bank-owned facts and machine inferences are kept apart</strong></td><td>Fifteen <code>bank_*</code> tables hold what core banking would own (transactions are immutable; corrections are reversal rows). Ten <code>infer_*</code> tables hold what the agent derived, and every derived row carries <code>confidence</code>, <code>inferred_by</code>, <code>inferred_at</code> and <code>evidence_source</code>. An auditor can ask "where did this come from" of any figure and get a column, not a conversation.</td><td><code>supabase/migrations/0001_initial_schema.sql</code></td></tr>
+          <tr><td><strong>The system cannot execute a transaction</strong></td><td>There is no execution path. A Lock or an Apply writes a row whose status is <code>pending_rm_review</code>; a relationship manager finalises it outside the agent. If the model's reply claims completion ("activated", a made-up reference number), a code gate replaces the sentence with a fixed "your RM will contact you" message. The build removed a model-written confirmation for FX locks after it fabricated reference numbers.</td><td><code>lib/tools/actions.ts</code> · <code>lib/chat_loop.ts</code> RM gate · <code>app/api/action/route.ts</code></td></tr>
+          <tr><td><strong>It informs; it does not advise</strong></td><td>The persona forbids definitive language ("you should", "the best product"), frames every recommendation as an option for consideration, and closes product messages with "Informational. Subject to product terms and approval." This follows Bank Negara Malaysia's informational-guidance norms.</td><td><code>lib/persona.ts</code> §Compliance, §Recommendation Rules</td></tr>
+          <tr><td><strong>Products are matched to the customer's tier</strong></td><td>Each catalogue product carries the SME maturity tier range it is designed for (1–5, CIMB's SME maturity model). The customer's inferred tier (4) filters the recommendation set before the model sees it, so a product outside the band is never offered. This is a suitability control implemented as a query filter, not as a prompt instruction.</td><td><code>bank_product_catalog.min/max_complexity_level</code> · <code>find_products_by_use_case</code></td></tr>
+          <tr><td><strong>Learning about the customer leaves a consent trail</strong></td><td>When the customer states a preference, the agent paraphrases, asks, and records only after confirmation. The record lands in an audit table with a <code>confirmed_by_user</code> flag and the interaction it came from, and the schema carries a <code>reverted_at</code> for withdrawal.</td><td><code>infer_learning_events</code> · <code>infer_user_preferences</code> · persona §Learning Behaviour</td></tr>
+          <tr><td><strong>The bank decides when the agent speaks first</strong></td><td>Proactive messages fire on thresholds written in code, not on the model's judgement: an FX alert needs a forecast within 14 days <em>and</em> a rate at least 2.0 % better than the 90-day average; a credit alert needs a projected balance dip <em>and</em> an open pre-approved offer. Conduct rules about unsolicited contact live where compliance can read them.</td><td><code>lib/tools/triggers.ts</code></td></tr>
+          <tr><td><strong>Model risk can be reviewed</strong></td><td>No framework, no abstraction layer. The agent's behaviour is 610 lines across five files — persona, tool definitions, the loop, the model client, the data client. A risk function can read all of it. Changing the model touches five files; changing what the agent may say touches one.</td><td><code>lib/persona.ts</code>, <code>tool_schemas.ts</code>, <code>chat_loop.ts</code>, <code>anthropic.ts</code>, <code>supabase.ts</code></td></tr>
+          <tr><td><strong>Behaviour can be replayed</strong></td><td>Every scripted step carries its own timestamp, and the server pins that timestamp for the whole request. The same question on the same step reads the same data, today or in six months, which is what a reviewer needs to reproduce an answer.</td><td><code>demo_storyboard.ts</code> <code>asOfIso</code> · <code>supabase.ts</code> <code>runWithDemoAsOf</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 id="d2p">The principle this build learned the hard way</h3>
+      <p>Compliance language was first placed in the prompt: "do not say the request is activated", "confirm before you commit". Over the build it regressed five times — four persona edits and one loop-level nudge — each time fixing one scripted answer and breaking another. The rule that survived is:</p>
+      <p class="principle">Tone belongs in the prompt. Rules belong in code.</p>
+      <p>Concretely: the persona decides how the agent addresses the customer and how it phrases an option; the code decides which buttons may appear (an allow-list of twelve action ids), what a completion claim looks like (two regular expressions), what time it is (a per-request clock), and what status a written row may have (<code>pending_rm_review</code>, always). A probabilistic layer is never the last line of defence for a regulated behaviour. This is the first decision to carry into any re-implementation.</p>
+    </section>
+  </main>
+  </div>
+
+  <footer>Technical handover · facts read from commit 1b5916a on 2026-09-17 · documents 01 and 02 on this page · 00 Context · 03 Tech Stack &amp; Migration · 04 Runbook to follow</footer>
 </div>
+
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var docs = Array.prototype.slice.call(document.querySelectorAll('.doc'));
+  function show(id, pushHash) {
+    docs.forEach(function (d) { d.hidden = d.id !== id; });
+    tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t.dataset.doc === id)); });
+    try { localStorage.setItem('cimb-handover-tab', id); } catch (e) {}
+    if (pushHash && history.replaceState) history.replaceState(null, '', '#' + id);
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.dataset.doc, true); window.scrollTo({ top: 0 }); }); });
+  // Deep links: #doc-02 opens the tab; #d2s1 (a section inside doc 02) opens it and scrolls.
+  var initial = null;
+  var h = location.hash.replace('#', '');
+  if (h) {
+    var el = document.getElementById(h);
+    if (el) { var owner = el.closest('.doc'); initial = owner ? owner.id : null; }
+  }
+  if (!initial) { try { initial = localStorage.getItem('cimb-handover-tab'); } catch (e) {} }
+  if (!initial || !document.getElementById(initial)) initial = 'doc-01';
+  show(initial, false);
+  if (h && h !== initial) { var target = document.getElementById(h); if (target) target.scrollIntoView(); }
+  // Section links inside a tab keep the tab open; links to the other tab switch it.
+  document.addEventListener('click', function (ev) {
+    var a = ev.target.closest && ev.target.closest('a[href^="#"]');
+    if (!a) return;
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (!el) return;
+    var owner = el.closest('.doc');
+    if (owner && owner.hidden) show(owner.id, false);
+  });
+})();
+</script>
