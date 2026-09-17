@@ -332,6 +332,7 @@ Four views, all Mermaid so they render on GitHub and diff in git. Six earlier di
 ### 8.1 Containers and the three entry paths
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "18px"}, "flowchart": {"nodeSpacing": 40, "rankSpacing": 60, "padding": 12}}}%%
 flowchart LR
   classDef client fill:#F6F5F2,stroke:#6B675F,color:#1B1A17
   classDef server fill:#FBF3F2,stroke:#B3261E,color:#1B1A17
@@ -377,6 +378,7 @@ flowchart LR
 ### 8.2 One Free-QA turn
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "18px"}, "sequence": {"actorFontSize": 18, "messageFontSize": 16, "noteFontSize": 16, "width": 190, "height": 52, "boxMargin": 12, "messageMargin": 40}}}%%
 sequenceDiagram
   autonumber
   participant UI as page.tsx
@@ -417,6 +419,7 @@ sequenceDiagram
 ### 8.3 Storyboard state machine
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "18px"}}}%%
 stateDiagram-v2
   direction LR
   [*] --> intro
@@ -457,6 +460,7 @@ Every step carries its own `asOfIso`; Free QA inherits the step it was typed on.
 ### 8.4 Tables and their keys
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "18px"}, "er": {"fontSize": 16, "entityPadding": 18, "minEntityWidth": 140}}}%%
 erDiagram
   bank_customers ||--o{ bank_accounts : owns
   bank_customers ||--o{ bank_balances_daily : has
