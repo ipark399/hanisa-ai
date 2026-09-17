@@ -59,9 +59,17 @@ w04/                                   lines  role
 ├── supabase/migrations/                      Postgres schema + data. Apply in number order.
 │   ├── 0001_initial_schema.sql         728   25 tables, 33 enums
 │   ├── 0002_seed_data.sql             2077   Synthetic 12-month history for one customer
-│   ├── 0003 … 0004                            pending_rm_review enums; bloomberg table (26th)
-│   ├── 0006 … 0009                            data corrections, FlexiCash repricing 8.5 → 6.5
-│   └── 0005 / 0010 / 0011                     date shifts (+35 / +18 / +14 days), two-pass
+│   ├── 0003_pending_rm_review_status.sql  5  Adds enum value pending_rm_review to 3 status types
+│   ├── 0004_bloomberg_market_snapshots.sql 25  26th table + 2 seed snapshots (external market feed)
+│   ├── 0005_shift_seed_timestamps.sql  294   Date shift +35 days, two-pass (park +10000, pull back)
+│   ├── 0006_lafont_eur_currency_fix.sql 31   Domaine Lafont rows: currency MYR → EUR, amounts recomputed via fx_rate
+│   ├── 0007_bloomberg_article_metadata.sql 26  Adds news_article_url, news_summary, news_published_at
+│   ├── 0008_product_rate_updates.sql    56   FlexiCash 8.5 → 6.5, Working Capital 7.2 → 8.0,
+│   │                                         Trade Bridging Loan removed, offer_terms updated
+│   ├── 0009_wcf_rename_to_revolving_credit.sql 24  Display name "Working Capital Facility" →
+│   │                                         "Revolving Credit (auto-enrollment)"; product_id unchanged
+│   ├── 0010_shift_timestamps_plus_18d.sql 275  Date shift +18 days, two-pass
+│   └── 0011_shift_timestamps_plus_14d.sql 282  Date shift +14 days, two-pass (current anchor: 2026-08-14)
 └── scripts/
     ├── shift_demo_dates.mjs            160   Move every date in the DB by N days (two-pass)
     └── generate_synthetic.py          1532   Regenerate the seed from scratch
