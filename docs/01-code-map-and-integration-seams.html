@@ -15,6 +15,12 @@
     --keep-bg: #EAF3EC;
     --warn: #8A5A00;
     --warn-bg: #F7EFDC;
+    --surface: #FFFFFF;
+    --keep: #E9EAEE;
+    --keep-ink: #3E414F;
+    --dark-band: #2B2D3A;
+    --dark-band-ink: #F2F2F5;
+    --accent-soft: #F6E4EA;
     --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
     --sans: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
     --mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
@@ -33,6 +39,12 @@
       --keep-bg: #1B2A20;
       --warn: #E2B25C;
       --warn-bg: #2B2414;
+      --surface: #1F2028;
+      --keep: #2E3040;
+      --keep-ink: #D6D8E2;
+      --dark-band: #3A3D4E;
+      --dark-band-ink: #F2F2F5;
+      --accent-soft: #3A1E28;
     }
   }
   :root[data-theme="dark"] {
@@ -48,6 +60,12 @@
     --keep-bg: #1B2A20;
     --warn: #E2B25C;
     --warn-bg: #2B2414;
+    --surface: #1F2028;
+    --keep: #2E3040;
+    --keep-ink: #D6D8E2;
+    --dark-band: #3A3D4E;
+    --dark-band-ink: #F2F2F5;
+    --accent-soft: #3A1E28;
   }
 
   * { box-sizing: border-box; }
@@ -153,6 +171,23 @@
   .dochead { grid-column: 1 / -1; padding-block: 26px 4px; }
   .dochead h2 { font-size: 24px; margin-bottom: 14px; display: block; }
   .dochead .lede { font-size: 16px; }
+  figure { margin: 0; }
+  .svgwrap { position: relative; left: 50%; transform: translateX(-50%); width: min(1120px, 100vw - 40px); overflow-x: auto; background: var(--surface); border: 1px solid var(--line); padding: 20px 16px 8px; margin: 6px 0 10px; }
+  .svgwrap svg { display: block; width: 100%; height: auto; min-width: 960px; color: var(--ink); }
+  figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; max-width: 90ch; }
+  .legend { display: flex; gap: 22px; margin-top: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .sw { width: 14px; height: 14px; border: 1px solid var(--line); display: inline-block; }
+  .sw.new { background: var(--accent-soft); border-color: var(--accent); }
+  .sw.keep { background: var(--keep); }
+  .sw.band { background: var(--dark-band); border-color: var(--dark-band); }
+  .delta { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); background: var(--surface); margin: 18px 0; max-width: 100%; }
+  .delta > div { padding: 14px 18px; border-right: 1px solid var(--line); }
+  .delta > div:last-child { border-right: 0; }
+  .delta .k { font-family: var(--mono); font-size: 11.5px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .delta .v { font-weight: 600; margin-top: 4px; }
+  .delta .v b { color: var(--accent-ink); }
+  @media (max-width: 860px) { .delta { grid-template-columns: 1fr; } .delta > div { border-right: 0; border-bottom: 1px solid var(--line); } .svgwrap { width: calc(100vw - 40px); } }
   .principle { max-width: 68ch; margin: 22px 0 16px; padding: 18px 22px; border-left: 3px solid var(--accent); background: var(--bg-note); font-family: var(--serif); font-size: 21px; line-height: 1.35; text-wrap: balance; }
   @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 </style>
@@ -172,6 +207,7 @@
     <div class="tabs" role="tablist" aria-label="Documents">
       <button class="tab" role="tab" id="tab-01" aria-controls="doc-01" aria-selected="true" data-doc="doc-01"><span class="n">01</span><span>Code map and integration seams</span></button>
       <button class="tab" role="tab" id="tab-02" aria-controls="doc-02" aria-selected="false" data-doc="doc-02"><span class="n">02</span><span>Design decisions</span></button>
+      <button class="tab" role="tab" id="tab-03" aria-controls="doc-03" aria-selected="false" data-doc="doc-03"><span class="n">03</span><span>Target platform 2027</span></button>
     </div>
   </header>
 
@@ -763,7 +799,205 @@ erDiagram
   </main>
   </div>
 
-  <footer>Technical handover · facts read from commit 1b5916a on 2026-09-17 · documents 01 and 02 on this page · 00 Context · 03 Tech Stack &amp; Migration · 04 Runbook to follow</footer>
+  <div class="doc" id="doc-03" role="tabpanel" aria-labelledby="tab-03" hidden>
+  <div class="dochead">
+    <p class="eyebrow">Document 03</p>
+    <h2>Target platform 2027</h2>
+    <p class="lede"><strong>What this is.</strong> The company's agent-platform direction — the 2026 Supervisor + Genie stack and the 2027 Master Agent architecture, translated from the internal proposal (draft v1, 2026-09-12). It is a roadmap picture, not a description of the CIMB build; documents 01 and 02 describe the build.</p>
+    <p class="lede"><strong>How to read it against 01.</strong> The CIMB agent's <em>chat loop</em> maps to the Master Agent box; its three <em>trigger functions</em> are what the three team-lead agents would absorb; its <code>bank_*</code> / <code>infer_*</code> tables and Bloomberg feed sit where Ontology, Genie and the Knowledge Brain sit. The "two platform layers, always on" band is exactly what the CIMB build's platform band lacks.</p>
+  </div>
+
+  <nav class="toc" aria-label="Contents of document 03">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#d3s1"><span class="n">1</span><span>2026 → 2027 architecture</span></a></li>
+      <li><a href="#d3s2"><span class="n">2</span><span>What changes</span></a></li>
+      <li><a href="#d3s3"><span class="n">3</span><span>Where the CIMB agent lands</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <section id="d3s1">
+      <h2><span class="n">01</span><span>2026 → 2027 architecture</span></h2>
+      <figure>
+      <div class="svgwrap">
+      <svg viewBox="0 0 1240 632" role="img" aria-label="2026 is a single line: user, Supervisor Agent, three Genie Spaces, Metric View. 2027: a Master Agent with memory and a learning loop delegates to three team-lead agents (structured analysis, knowledge, task automation); each commands its own executors (ontology and Genie, RAG agent and Knowledge Brain, specialised and common modules). Genie Space is reused unchanged." xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+          <marker id="arr-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+        </defs>
+        <text x="20" y="22" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.5" fill="var(--muted)">2026 · SUPERVISOR + GENIE</text>
+        <text x="430" y="22" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.5" fill="var(--muted)">2027 · MASTER AGENT (LANGGRAPH DEEP AGENT)</text>
+
+        <g font-family="Source Sans 3, sans-serif" font-size="12.5" fill="currentColor">
+          <rect x="110" y="44" width="140" height="40" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
+          <text x="180" y="69" text-anchor="middle" font-weight="700">Business user</text>
+          <line x1="180" y1="84" x2="180" y2="138" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <text x="188" y="116" font-size="11" fill="var(--muted)">question</text>
+          <rect x="60" y="140" width="240" height="78" fill="var(--dark-band)" stroke="var(--dark-band)"/>
+          <text x="180" y="166" text-anchor="middle" font-weight="700" fill="var(--dark-band-ink)">Supervisor Agent</text>
+          <text x="180" y="184" text-anchor="middle" font-size="11.5" fill="var(--dark-band-ink)" opacity="0.85">Agent Bricks · control = instruction</text>
+          <text x="180" y="202" text-anchor="middle" font-size="11.5" fill="var(--dark-band-ink)" opacity="0.85">natural-language routing (probabilistic)</text>
+          <line x1="180" y1="218" x2="180" y2="288" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <text x="188" y="258" font-size="11" fill="var(--muted)">tool call</text>
+          <rect x="60" y="290" width="240" height="78" fill="var(--keep)" stroke="currentColor" stroke-width="1.2"/>
+          <text x="180" y="316" text-anchor="middle" font-weight="700" fill="var(--keep-ink)">Genie Space × 3</text>
+          <text x="180" y="336" text-anchor="middle" font-size="11.5" fill="var(--keep-ink)">SCM · daily results · P&amp;L close</text>
+          <text x="180" y="354" text-anchor="middle" font-size="11.5" fill="var(--keep-ink)">Text-to-SQL</text>
+          <line x1="180" y1="368" x2="180" y2="428" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <text x="188" y="403" font-size="11" fill="var(--muted)">SQL</text>
+          <rect x="60" y="430" width="240" height="52" fill="var(--keep)" stroke="currentColor" stroke-width="1.2"/>
+          <text x="180" y="452" text-anchor="middle" font-weight="700" fill="var(--keep-ink)">Metric View · Gold</text>
+          <text x="180" y="470" text-anchor="middle" font-size="11.5" fill="var(--keep-ink)">eeip_prd (structured data)</text>
+          <text x="60" y="520" font-size="11" fill="var(--muted)">· single line · structured data only · no memory</text>
+          <text x="60" y="538" font-size="11" fill="var(--muted)">· procedure control = one instruction sentence</text>
+        </g>
+
+        <line x1="330" y1="300" x2="400" y2="300" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#arr-acc)"/>
+        <text x="365" y="288" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--accent-ink)">2027</text>
+
+        <g font-family="Source Sans 3, sans-serif" font-size="12.5" fill="currentColor">
+          <rect x="430" y="44" width="130" height="40" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
+          <text x="495" y="69" text-anchor="middle" font-weight="700">Business user</text>
+          <line x1="560" y1="64" x2="608" y2="64" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+
+          <rect x="610" y="40" width="330" height="90" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="775" y="62" text-anchor="middle" font-weight="700" fill="var(--accent-ink)">Master Agent</text>
+          <text x="775" y="79" text-anchor="middle" font-size="11.5">LangGraph Deep Agent · deployed on Databricks Apps</text>
+          <text x="775" y="97" text-anchor="middle" font-size="11.5">intent → goals · synthesis · final verification</text>
+          <text x="775" y="115" text-anchor="middle" font-size="11.5">long procedures resume from checkpoints</text>
+          <text x="584" y="56" text-anchor="middle" font-size="10.5" fill="var(--muted)">question · feedback</text>
+
+          <rect x="980" y="40" width="200" height="40" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="1080" y="57" text-anchor="middle" font-weight="700" fill="var(--accent-ink)">Memory</text>
+          <text x="1080" y="72" text-anchor="middle" font-size="11">dialogue history · user profile</text>
+          <line x1="940" y1="60" x2="978" y2="60" stroke="var(--accent)" stroke-width="1.2" marker-start="url(#arr-acc)" marker-end="url(#arr-acc)"/>
+          <rect x="980" y="90" width="200" height="40" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="1080" y="107" text-anchor="middle" font-weight="700" fill="var(--accent-ink)">Learning loop → personalisation</text>
+          <text x="1080" y="122" text-anchor="middle" font-size="11">ratings · formats · role scope</text>
+          <line x1="978" y1="110" x2="942" y2="110" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#arr-acc)"/>
+
+          <text x="610" y="36" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="1.5" fill="var(--muted)">STRATEGY</text>
+          <text x="430" y="145" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="1.5" fill="var(--muted)">PLANNING · TEAM-LEAD AGENTS 3</text>
+
+          <line x1="775" y1="130" x2="775" y2="152" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="540" y1="152" x2="1080" y2="152" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="540" y1="152" x2="540" y2="174" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <line x1="810" y1="152" x2="810" y2="174" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <line x1="1080" y1="152" x2="1080" y2="174" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <text x="783" y="146" font-size="10.5" fill="var(--muted)">delegate to team leads · collect results</text>
+
+          <rect x="430" y="176" width="220" height="46" fill="var(--dark-band)" stroke="var(--dark-band)"/>
+          <text x="540" y="195" text-anchor="middle" font-weight="700" fill="var(--dark-band-ink)">Structured-analysis agent</text>
+          <text x="540" y="212" text-anchor="middle" font-size="11" fill="var(--dark-band-ink)" opacity="0.85">commands ontology · Genie ×4</text>
+          <rect x="700" y="176" width="220" height="46" fill="var(--dark-band)" stroke="var(--dark-band)"/>
+          <text x="810" y="195" text-anchor="middle" font-weight="700" fill="var(--dark-band-ink)">Knowledge agent</text>
+          <text x="810" y="212" text-anchor="middle" font-size="11" fill="var(--dark-band-ink)" opacity="0.85">commands RAG agent · strategic KPIs</text>
+          <rect x="970" y="176" width="220" height="46" fill="var(--dark-band)" stroke="var(--dark-band)"/>
+          <text x="1080" y="195" text-anchor="middle" font-weight="700" fill="var(--dark-band-ink)">Task-automation agent</text>
+          <text x="1080" y="212" text-anchor="middle" font-size="11" fill="var(--dark-band-ink)" opacity="0.85">commands specialised · common modules</text>
+
+          <line x1="540" y1="222" x2="540" y2="290" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <line x1="810" y1="222" x2="810" y2="290" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <line x1="1080" y1="222" x2="1080" y2="290" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <text x="548" y="248" font-size="10.5" fill="var(--muted)">SQL queries · parallel reads</text>
+          <text x="548" y="262" font-size="10.5" fill="var(--muted)">fix and re-run on error</text>
+          <text x="818" y="248" font-size="10.5" fill="var(--muted)">search directives · source curation</text>
+          <text x="1088" y="248" font-size="10.5" fill="var(--muted)">pick modules · order them</text>
+          <text x="430" y="284" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="1.5" fill="var(--muted)">EXECUTION</text>
+
+          <rect x="430" y="292" width="220" height="44" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="540" y="311" text-anchor="middle" font-weight="700" fill="var(--accent-ink)">Ontology</text>
+          <text x="540" y="327" text-anchor="middle" font-size="10.5">terms · synonyms · KPI definitions, one dictionary</text>
+          <line x1="540" y1="336" x2="540" y2="360" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <rect x="430" y="362" width="220" height="78" fill="var(--keep)" stroke="currentColor" stroke-width="1.2"/>
+          <text x="540" y="384" text-anchor="middle" font-weight="700" fill="var(--keep-ink)">Genie Space × 4 (unchanged)</text>
+          <text x="540" y="404" text-anchor="middle" font-size="10.5" fill="var(--keep-ink)">SCM · daily results · P&amp;L · mixed-sales promo</text>
+          <text x="540" y="424" text-anchor="middle" font-size="11" fill="var(--keep-ink)">called as tools via Conversation API</text>
+          <line x1="540" y1="440" x2="540" y2="464" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <rect x="430" y="466" width="220" height="52" fill="var(--keep)" stroke="currentColor" stroke-width="1.2"/>
+          <text x="540" y="488" text-anchor="middle" font-weight="700" fill="var(--keep-ink)">Metric View · Gold</text>
+          <text x="540" y="506" text-anchor="middle" font-size="11.5" fill="var(--keep-ink)">source of verified reference values</text>
+
+          <rect x="700" y="292" width="220" height="44" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="810" y="311" text-anchor="middle" font-weight="700" fill="var(--accent-ink)">RAG agent</text>
+          <text x="810" y="327" text-anchor="middle" font-size="11">question → query → evidence → draft answer</text>
+          <line x1="810" y1="336" x2="810" y2="348" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <rect x="700" y="350" width="220" height="60" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="810" y="372" text-anchor="middle" font-weight="700" fill="var(--accent-ink)">Knowledge Brain</text>
+          <text x="810" y="390" text-anchor="middle" font-size="10.5">Vector Search index · Graph RAG when needed</text>
+          <text x="810" y="404" text-anchor="middle" font-size="10.5" fill="var(--muted)">document knowledge store</text>
+          <line x1="810" y1="410" x2="810" y2="424" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+          <text x="818" y="420" font-size="10.5" fill="var(--muted)">evidence + source location</text>
+          <rect x="700" y="426" width="220" height="48" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
+          <text x="810" y="446" text-anchor="middle" font-weight="700">Strategic-KPI knowledge</text>
+          <text x="810" y="464" text-anchor="middle" font-size="10.5">monthly-report evidence · definition queries</text>
+          <rect x="700" y="490" width="220" height="30" fill="var(--surface)" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="810" y="509" text-anchor="middle" font-size="10.5" fill="var(--muted)">definitions · plans · minutes · groupware</text>
+          <polyline points="700,505 676,505 676,380 698,380" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+          <text x="656" y="482" font-size="10.5" fill="var(--muted)" transform="rotate(-90 656 482)">periodic indexing</text>
+
+          <rect x="970" y="292" width="220" height="100" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="1080" y="313" text-anchor="middle" font-weight="700" fill="var(--accent-ink)">Specialised · business-task automation</text>
+          <text x="1080" y="333" text-anchor="middle" font-size="10.5">repetitive tasks found in user interviews,</text>
+          <text x="1080" y="351" text-anchor="middle" font-size="10.5">packaged as per-owner modules</text>
+          <text x="1080" y="373" text-anchor="middle" font-size="11" fill="var(--muted)">added as needed</text>
+          <rect x="970" y="404" width="220" height="100" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="1080" y="425" text-anchor="middle" font-weight="700" fill="var(--accent-ink)">Common · general-purpose agent</text>
+          <text x="1080" y="445" text-anchor="middle" font-size="10.5">report writing · calculation · charts</text>
+          <text x="1080" y="463" text-anchor="middle" font-size="11">notifications</text>
+          <text x="1080" y="485" text-anchor="middle" font-size="11" fill="var(--muted)">reusable in any domain</text>
+          <line x1="968" y1="450" x2="922" y2="450" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+          <text x="945" y="443" text-anchor="middle" font-size="10.5" fill="var(--muted)">evidence</text>
+
+          <rect x="430" y="534" width="760" height="48" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3"/>
+          <text x="440" y="553" font-size="11" font-weight="600">Two platform layers (always on)</text>
+          <text x="640" y="553" font-size="11">AI Gateway — policy · rate limits · model fallback · cost attribution</text>
+          <text x="640" y="572" font-size="11">MLflow 3 tracing — every call logged = review evidence</text>
+
+          <text x="430" y="606" font-size="11" fill="var(--muted)">· 3 tiers: Master → 3 team leads → executors · every tool call is checked before execution · detour on timeout</text>
+          <text x="430" y="622" font-size="11" fill="var(--muted)">· user permissions inherited · Genie Space and Metric View reused unchanged</text>
+        </g>
+      </svg>
+      </div>
+      <div class="legend">
+        <span><i class="sw new"></i>new in 2027</span>
+        <span><i class="sw keep"></i>2026 assets kept</span>
+        <span><i class="sw band"></i>command tier (Master · team leads)</span>
+        <span>dashed = verification · reference flow</span>
+      </div>
+      <figcaption>In 2026 a single supervisor line handled structured data only. 2027 is three tiers: the Master Agent, with memory and a learning loop beside it, delegates to three team-lead agents; each commands its own executors; the Master checks results against Metric View values before answering. Adding a team lead adds a domain. Genie Space and Metric View are reused as they are.</figcaption>
+      </figure>
+    </section>
+
+    <section id="d3s2">
+      <h2><span class="n">02</span><span>What changes</span></h2>
+      <div class="delta">
+        <div><div class="k">Control</div><div class="v">instruction sentence (probabilistic) → <b>code graph (deterministic · reviewable)</b></div></div>
+        <div><div class="k">Data handled</div><div class="v">structured only → <b>structured + unstructured + ontology</b></div></div>
+        <div><div class="k">User experience</div><div class="v">start from scratch each time → <b>remembers and learns, personalised</b></div></div>
+      </div>
+    </section>
+
+    <section id="d3s3">
+      <h2><span class="n">03</span><span>Where the CIMB agent lands</span></h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>CIMB build (doc 01)</th><th>2027 platform box</th><th>What changes</th></tr></thead>
+        <tbody>
+          <tr><td><code>chat_loop.ts</code> — one loop, persona, tool loop, gates</td><td>Master Agent</td><td>Gains intent decomposition, result synthesis and checkpointing; loses nothing it has</td></tr>
+          <tr><td><code>infer_user_preferences</code>, <code>infer_learning_events</code></td><td>메모리 관리 · 학습 루프</td><td>Same rows, promoted to platform services with evaluation of answers</td></tr>
+          <tr><td>3 trigger functions (brief, FX, FlexiCash)</td><td>팀장 에이전트 3</td><td>Each becomes an agent with its own tool subset and delegation contract</td></tr>
+          <tr><td><code>bank_*</code> 15 tables, product catalog</td><td>온톨로지 · Genie · Metric View</td><td>Core-banking data behind governed metric definitions instead of seeded rows</td></tr>
+          <tr><td><code>infer_*</code> 10 tables, Bloomberg feed</td><td>RAG · Knowledge Brain · 전략지표 지식화</td><td>Inferences computed by jobs and indexed, not seeded</td></tr>
+          <tr><td>RM handoff (<code>pending_rm_review</code>)</td><td>모든 도구 호출은 실행 전 검사</td><td>The gate moves from a reply-text check to a platform pre-execution check</td></tr>
+          <tr><td>Anthropic API direct, no gateway, per-turn audit rows</td><td>AI Gateway · MLflow 3 트레이싱</td><td>Policy, rate limits, fallback, cost attribution and full-call tracing arrive with the platform</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+  </main>
+  </div>
+
+  <footer>Technical handover · facts read from commit 1b5916a on 2026-09-17 · documents 01, 02 and 03 on this page · 00 Context · 04 Runbook to follow</footer>
 </div>
 
 <script>
