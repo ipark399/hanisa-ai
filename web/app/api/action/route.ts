@@ -12,7 +12,7 @@ import { runWithDemoAsOf } from '@/lib/supabase';
 // LLM 호출 시 프롬프트의 State 지시를 무시하고 "Locked at 4.95..." 같이 자체 재작성하는
 // self-attention 결함 발견 (ws-174, 2026-07-15). LLM 재작성 차단으로 문구 안정성 확보.
 const CONFIRM_PROMPTS: Record<string, string> = {
-  accept_preapproved_offer: `Confirm FlexiCash request received (pending RM review). State: "Request received. Reference: REQ-{activation_ref}. Your RM will contact you within 24 hours to finalize. MYR 65,000 credit line at 8.5% p.a. once activated." Keep concise. Do NOT say "activated" or "available immediately".`,
+  accept_preapproved_offer: `Confirm FlexiCash request received (pending RM review). State: "Request received. Reference: REQ-{activation_ref}. Your RM will contact you within 24 hours to finalize. {currency} {approved_amount} credit line at {interest_rate_pa}% p.a. once activated." Take activation_ref, currency, approved_amount and interest_rate_pa from the Action result — do not invent them. Keep concise. Do NOT say "activated" or "available immediately".`,
   decline_offer: `Acknowledge politely that Mr. Bakri declined. One sentence.`
 };
 

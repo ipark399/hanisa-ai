@@ -66,6 +66,23 @@ export async function record_user_action(args: {
   } else if (args.action_type === 'accept_preapproved_offer') {
     const offerId = args.referenced_entity_id;
     if (offerId) {
+      // Amount and rate come from the offer row, not from constants. The seed
+      // repriced FlexiCash 8.5 → 6.5 (migration 0008) in the catalog, pricing
+      // table and offer_terms, but this write path kept a hard-coded 8.5 — so
+      // an Apply followed by "what's my FlexiCash rate?" answered 8.5% while
+      // the storyboard had just shown 6.5%. Reading the offer keeps the three
+      // in step for the next repricing too.
+      const { data: offer } = await supabase
+        .from('bank_preapproved_offers')
+        .select('approved_amount, currency, offer_terms')
+        .eq('offer_id', offerId)
+        .maybeSingle();
+      const terms = (offer?.offer_terms ?? {}) as Record<string, unknown>;
+      const approvedAmount = Number(offer?.approved_amount ?? 65000);
+      const currency = String(offer?.currency ?? 'MYR');
+      const parsedRate = Number(terms.interest_rate_pa);
+      const interestRate = Number.isFinite(parsedRate) ? parsedRate : null;
+
       await supabase
         .from('bank_preapproved_offers')
         .update({ status: 'accepted', accepted_at: now, accepted_via: 'agent_chat' })
@@ -80,9 +97,9 @@ export async function record_user_action(args: {
         account_id: null,
         enrolled_at: now.slice(0, 10),
         status: 'pending_rm_review',
-        principal_amount: 65000,
+        principal_amount: approvedAmount,
         outstanding_amount: 0,
-        currency: 'MYR',
+        currency,
         source: 'core_banking'
       });
       await supabase.from('bank_credit_limits').insert({
@@ -90,16 +107,21 @@ export async function record_user_action(args: {
         customer_id: DEMO_CUSTOMER_ID,
         product_holding_id: phId,
         limit_type: 'flexicash',
-        limit_amount: 65000,
+        limit_amount: approvedAmount,
         outstanding_amount: 0,
-        available_amount: 65000,
-        currency: 'MYR',
-        interest_rate: 8.5,
+        available_amount: approvedAmount,
+        currency,
+        interest_rate: interestRate,
         effective_from: now.slice(0, 10),
         status: 'pending_rm_review',
         source: 'core_banking'
       });
-      domainResult = { activation_ref: `FLX-${new Date().getFullYear()}-${Math.floor(Math.random() * 9999)}`, approved_amount: 65000 };
+      domainResult = {
+        activation_ref: `FLX-${new Date().getFullYear()}-${Math.floor(Math.random() * 9999)}`,
+        approved_amount: approvedAmount,
+        currency,
+        interest_rate_pa: interestRate
+      };
     }
   }
 
