@@ -272,7 +272,7 @@ Deletes rows whose ids start with `ph_flx_`, `cl_flx_`, `sched_fx_`, `int_`, `pr
 
 ### 3.4 `POST /api/triggers` — debug
 
-`{ "trigger": "monday_brief" | "fx" | "flexicash" }` → `{ "fires": bool, "payload": {…}, "message": "…" }`. Evaluates one trigger and asks the model to phrase the push. **The UI does not call this**; the storyboard hard-codes the push text. It has no `asOfIso` plumbing, so it evaluates at the env-default clock. Useful for checking trigger logic, not for the demo.
+`{ "trigger": "monday_brief" | "fx" | "flexicash" }` → `{ "fires": bool, "payload": {…}, "message": "…" }`. Evaluates one trigger and asks the model to phrase the push. **The front end does not call this**; the storyboard hard-codes the push text. It has no `asOfIso` plumbing, so it evaluates at the env-default clock. Useful for checking trigger logic, not for the demo.
 
 ---
 

@@ -442,7 +442,7 @@ EXECUTION    │  tools/ · 23 handlers · 11 read the demo clock (lte asOf) · 
       <p>Deletes rows whose ids start with <code>ph_flx_</code>, <code>cl_flx_</code>, <code>sched_fx_</code>, <code>int_</code>, <code>pref_</code>, <code>le_</code>; deletes any <code>pending_rm_review</code> row in three tables; sets <code>offer_flx_001</code> back to <code>open</code>. Seed rows (non-prefixed ids) are untouched. Idempotent — call it before every run.</p>
 
       <h3>3.4 <code>POST /api/triggers</code> — debug</h3>
-      <p><code>{ "trigger": "monday_brief" | "fx" | "flexicash" }</code> → <code>{ "fires": bool, "payload": {…}, "message": "…" }</code>. Evaluates one trigger and asks the model to phrase the push. <strong>The UI does not call this</strong>; the storyboard hard-codes the push text. It has no <code>asOfIso</code> plumbing, so it evaluates at the env-default clock. Useful for checking trigger logic, not for the demo.</p>
+      <p><code>{ "trigger": "monday_brief" | "fx" | "flexicash" }</code> → <code>{ "fires": bool, "payload": {…}, "message": "…" }</code>. Evaluates one trigger and asks the model to phrase the push. <strong>The front end does not call this</strong>; the storyboard hard-codes the push text. It has no <code>asOfIso</code> plumbing, so it evaluates at the env-default clock. Useful for checking trigger logic, not for the demo.</p>
     </section>
 
     <section id="s4">
