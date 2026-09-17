@@ -4,7 +4,7 @@
 
 ## 1. Why this shape fits a bank
 
-The one-line version: **the model does the talking, the code enforces the rules, and a person makes the decision.** Banks do not ask an AI system to be clever; they ask where a number came from, what stops it from acting alone, and who is accountable when it speaks. This build answers those three questions in its structure, not in its prompt.
+The one-line version: **the model does the thinking, the code enforces the rules, and a person makes the decision.** Banks do not ask an AI system to be clever; they ask where a number came from, what stops it from acting alone, and who is accountable when it speaks. This build answers those three questions in its structure, not in its prompt.
 
 | What a bank requires | How the build answers | Where to look |
 |---|---|---|
