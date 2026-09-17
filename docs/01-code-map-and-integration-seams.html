@@ -173,7 +173,7 @@
   .dochead .lede { font-size: 16px; }
   figure { margin: 0; }
   .svgwrap { position: relative; left: 50%; transform: translateX(-50%); width: min(1120px, 100vw - 40px); overflow-x: auto; background: var(--surface); border: 1px solid var(--line); padding: 20px 16px 8px; margin: 6px 0 10px; }
-  .svgwrap svg { display: block; width: 100%; height: auto; min-width: 960px; color: var(--ink); }
+  .svgwrap svg { display: block; width: 100%; height: auto; min-width: 760px; max-width: 980px; margin: 0 auto; color: var(--ink); }
   figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; max-width: 90ch; }
   .legend { display: flex; gap: 22px; margin-top: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
   .legend span { display: inline-flex; align-items: center; gap: 7px; }
@@ -188,6 +188,17 @@
   .delta .v { font-weight: 600; margin-top: 4px; }
   .delta .v b { color: var(--accent-ink); }
   @media (max-width: 860px) { .delta { grid-template-columns: 1fr; } .delta > div { border-right: 0; border-bottom: 1px solid var(--line); } .svgwrap { width: calc(100vw - 40px); } }
+  .pillar { border: 1px solid var(--line); background: var(--surface); margin: 0 0 22px; }
+  .pillar-head { background: var(--dark-band); color: var(--dark-band-ink); padding: 10px 16px; display: flex; align-items: baseline; gap: 12px; }
+  .pillar-head .tag { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; opacity: .8; }
+  .pillar-head h3 { margin: 0; color: inherit; font-size: 18px; }
+  .pillar-why { padding: 12px 16px; font-size: 15px; color: var(--muted); border-bottom: 1px dashed var(--line); max-width: none; }
+  .pillar-why b { color: var(--ink); }
+  .pillar .tablewrap { border: 0; margin: 0; }
+  .pillar table td.name { font-weight: 600; white-space: nowrap; }
+  .pillar table tr.grp td { padding: 12px 12px 4px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--accent-ink); border-bottom: 0; }
+  .pillar table td.impact::before { content: ""; display: inline-block; width: 6px; height: 6px; background: var(--accent); margin: 0 8px 2px 0; }
+  .layerlab { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
   .principle { max-width: 68ch; margin: 22px 0 16px; padding: 18px 22px; border-left: 3px solid var(--accent); background: var(--bg-note); font-family: var(--serif); font-size: 21px; line-height: 1.35; text-wrap: balance; }
   @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 </style>
@@ -207,7 +218,7 @@
     <div class="tabs" role="tablist" aria-label="Documents">
       <button class="tab" role="tab" id="tab-01" aria-controls="doc-01" aria-selected="true" data-doc="doc-01"><span class="n">01</span><span>Code map and integration seams</span></button>
       <button class="tab" role="tab" id="tab-02" aria-controls="doc-02" aria-selected="false" data-doc="doc-02"><span class="n">02</span><span>Design decisions</span></button>
-      <button class="tab" role="tab" id="tab-03" aria-controls="doc-03" aria-selected="false" data-doc="doc-03"><span class="n">03</span><span>Target platform 2027</span></button>
+      <button class="tab" role="tab" id="tab-03" aria-controls="doc-03" aria-selected="false" data-doc="doc-03"><span class="n">03</span><span>LG use case</span></button>
     </div>
   </header>
 
@@ -802,59 +813,31 @@ erDiagram
   <div class="doc" id="doc-03" role="tabpanel" aria-labelledby="tab-03" hidden>
   <div class="dochead">
     <p class="eyebrow">Document 03</p>
-    <h2>Target platform 2027</h2>
-    <p class="lede"><strong>What this is.</strong> The company's agent-platform direction — the 2026 Supervisor + Genie stack and the 2027 Master Agent architecture, translated from the internal proposal (draft v1, 2026-09-12). It is a roadmap picture, not a description of the CIMB build; documents 01 and 02 describe the build.</p>
-    <p class="lede"><strong>How to read it against 01.</strong> The CIMB agent's <em>chat loop</em> maps to the Master Agent box; its three <em>trigger functions</em> are what the three team-lead agents would absorb; its <code>bank_*</code> / <code>infer_*</code> tables and Bloomberg feed sit where Ontology, Genie and the Knowledge Brain sit. The "two platform layers, always on" band is exactly what the CIMB build's platform band lacks.</p>
+    <h2>LG Use Case — 2027 Master Agent Platform</h2>
+    <p class="lede"><strong>What this is.</strong> A reference case from another engagement: the KPI-system AI agent for LG Electronics' Korea Sales Headquarters, and its 2027 target architecture — a LangGraph Deep Agent as master, three team-lead agents, and executors on Databricks. Translated from the internal proposal (draft v1, 2026-09-12).</p>
+    <p class="lede"><strong>Why it is here.</strong> It shows the platform shape a single-loop agent such as the CIMB build grows into: memory and a learning loop beside the master, delegation to domain agents, and two always-on platform layers (gateway and tracing). It is not a description of the CIMB build.</p>
   </div>
 
   <nav class="toc" aria-label="Contents of document 03">
     <p>Contents</p>
     <ol>
-      <li><a href="#d3s1"><span class="n">1</span><span>2026 → 2027 architecture</span></a></li>
-      <li><a href="#d3s2"><span class="n">2</span><span>What changes</span></a></li>
-      <li><a href="#d3s3"><span class="n">3</span><span>Where the CIMB agent lands</span></a></li>
+      <li><a href="#d3s1"><span class="n">1</span><span>2027 architecture</span></a></li>
+      <li><a href="#d3s2"><span class="n">2</span><span>Key features</span></a></li>
     </ol>
   </nav>
 
   <main>
     <section id="d3s1">
-      <h2><span class="n">01</span><span>2026 → 2027 architecture</span></h2>
+      <h2><span class="n">01</span><span>2027 architecture — Master Agent (LangGraph Deep Agent)</span></h2>
       <figure>
       <div class="svgwrap">
-      <svg viewBox="0 0 1240 632" role="img" aria-label="2026 is a single line: user, Supervisor Agent, three Genie Spaces, Metric View. 2027: a Master Agent with memory and a learning loop delegates to three team-lead agents (structured analysis, knowledge, task automation); each commands its own executors (ontology and Genie, RAG agent and Knowledge Brain, specialised and common modules). Genie Space is reused unchanged." xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 840 632" role="img" aria-label="2027: a Master Agent with memory and a learning loop delegates to three team-lead agents (structured analysis, knowledge, task automation); each commands its own executors (ontology and Genie, RAG agent and Knowledge Brain, specialised and common modules). Genie Space is reused unchanged." xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
           <marker id="arr-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
         </defs>
-        <text x="20" y="22" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.5" fill="var(--muted)">2026 · SUPERVISOR + GENIE</text>
+        <g transform="translate(-410 0)">
         <text x="430" y="22" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.5" fill="var(--muted)">2027 · MASTER AGENT (LANGGRAPH DEEP AGENT)</text>
-
-        <g font-family="Source Sans 3, sans-serif" font-size="12.5" fill="currentColor">
-          <rect x="110" y="44" width="140" height="40" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
-          <text x="180" y="69" text-anchor="middle" font-weight="700">Business user</text>
-          <line x1="180" y1="84" x2="180" y2="138" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
-          <text x="188" y="116" font-size="11" fill="var(--muted)">question</text>
-          <rect x="60" y="140" width="240" height="78" fill="var(--dark-band)" stroke="var(--dark-band)"/>
-          <text x="180" y="166" text-anchor="middle" font-weight="700" fill="var(--dark-band-ink)">Supervisor Agent</text>
-          <text x="180" y="184" text-anchor="middle" font-size="11.5" fill="var(--dark-band-ink)" opacity="0.85">Agent Bricks · control = instruction</text>
-          <text x="180" y="202" text-anchor="middle" font-size="11.5" fill="var(--dark-band-ink)" opacity="0.85">natural-language routing (probabilistic)</text>
-          <line x1="180" y1="218" x2="180" y2="288" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
-          <text x="188" y="258" font-size="11" fill="var(--muted)">tool call</text>
-          <rect x="60" y="290" width="240" height="78" fill="var(--keep)" stroke="currentColor" stroke-width="1.2"/>
-          <text x="180" y="316" text-anchor="middle" font-weight="700" fill="var(--keep-ink)">Genie Space × 3</text>
-          <text x="180" y="336" text-anchor="middle" font-size="11.5" fill="var(--keep-ink)">SCM · daily results · P&amp;L close</text>
-          <text x="180" y="354" text-anchor="middle" font-size="11.5" fill="var(--keep-ink)">Text-to-SQL</text>
-          <line x1="180" y1="368" x2="180" y2="428" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
-          <text x="188" y="403" font-size="11" fill="var(--muted)">SQL</text>
-          <rect x="60" y="430" width="240" height="52" fill="var(--keep)" stroke="currentColor" stroke-width="1.2"/>
-          <text x="180" y="452" text-anchor="middle" font-weight="700" fill="var(--keep-ink)">Metric View · Gold</text>
-          <text x="180" y="470" text-anchor="middle" font-size="11.5" fill="var(--keep-ink)">eeip_prd (structured data)</text>
-          <text x="60" y="520" font-size="11" fill="var(--muted)">· single line · structured data only · no memory</text>
-          <text x="60" y="538" font-size="11" fill="var(--muted)">· procedure control = one instruction sentence</text>
-        </g>
-
-        <line x1="330" y1="300" x2="400" y2="300" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#arr-acc)"/>
-        <text x="365" y="288" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--accent-ink)">2027</text>
 
         <g font-family="Source Sans 3, sans-serif" font-size="12.5" fill="currentColor">
           <rect x="430" y="44" width="130" height="40" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
@@ -958,41 +941,96 @@ erDiagram
           <text x="430" y="606" font-size="11" fill="var(--muted)">· 3 tiers: Master → 3 team leads → executors · every tool call is checked before execution · detour on timeout</text>
           <text x="430" y="622" font-size="11" fill="var(--muted)">· user permissions inherited · Genie Space and Metric View reused unchanged</text>
         </g>
+        </g>
       </svg>
       </div>
       <div class="legend">
         <span><i class="sw new"></i>new in 2027</span>
-        <span><i class="sw keep"></i>2026 assets kept</span>
+        <span><i class="sw keep"></i>existing assets kept (Genie · Metric View)</span>
         <span><i class="sw band"></i>command tier (Master · team leads)</span>
         <span>dashed = verification · reference flow</span>
       </div>
-      <figcaption>In 2026 a single supervisor line handled structured data only. 2027 is three tiers: the Master Agent, with memory and a learning loop beside it, delegates to three team-lead agents; each commands its own executors; the Master checks results against Metric View values before answering. Adding a team lead adds a domain. Genie Space and Metric View are reused as they are.</figcaption>
+      <figcaption>Three tiers: the Master Agent, with memory and a learning loop beside it, delegates to three team-lead agents; each commands its own executors; the Master checks results against Metric View values before answering. Adding a team lead adds a domain. Genie Space and Metric View are reused as they are.</figcaption>
       </figure>
     </section>
 
     <section id="d3s2">
-      <h2><span class="n">02</span><span>What changes</span></h2>
+      <h2><span class="n">02</span><span>Key features</span></h2>
       <div class="delta">
         <div><div class="k">Control</div><div class="v">instruction sentence (probabilistic) → <b>code graph (deterministic · reviewable)</b></div></div>
         <div><div class="k">Data handled</div><div class="v">structured only → <b>structured + unstructured + ontology</b></div></div>
         <div><div class="k">User experience</div><div class="v">start from scratch each time → <b>remembers and learns, personalised</b></div></div>
       </div>
-    </section>
 
-    <section id="d3s3">
-      <h2><span class="n">03</span><span>Where the CIMB agent lands</span></h2>
-      <div class="tablewrap"><table>
-        <thead><tr><th>CIMB build (doc 01)</th><th>2027 platform box</th><th>What changes</th></tr></thead>
-        <tbody>
-          <tr><td><code>chat_loop.ts</code> — one loop, persona, tool loop, gates</td><td>Master Agent</td><td>Gains intent decomposition, result synthesis and checkpointing; loses nothing it has</td></tr>
-          <tr><td><code>infer_user_preferences</code>, <code>infer_learning_events</code></td><td>메모리 관리 · 학습 루프</td><td>Same rows, promoted to platform services with evaluation of answers</td></tr>
-          <tr><td>3 trigger functions (brief, FX, FlexiCash)</td><td>팀장 에이전트 3</td><td>Each becomes an agent with its own tool subset and delegation contract</td></tr>
-          <tr><td><code>bank_*</code> 15 tables, product catalog</td><td>온톨로지 · Genie · Metric View</td><td>Core-banking data behind governed metric definitions instead of seeded rows</td></tr>
-          <tr><td><code>infer_*</code> 10 tables, Bloomberg feed</td><td>RAG · Knowledge Brain · 전략지표 지식화</td><td>Inferences computed by jobs and indexed, not seeded</td></tr>
-          <tr><td>RM handoff (<code>pending_rm_review</code>)</td><td>모든 도구 호출은 실행 전 검사</td><td>The gate moves from a reply-text check to a platform pre-execution check</td></tr>
-          <tr><td>Anthropic API direct, no gateway, per-turn audit rows</td><td>AI Gateway · MLflow 3 트레이싱</td><td>Policy, rate limits, fallback, cost attribution and full-call tracing arrive with the platform</td></tr>
-        </tbody>
-      </table></div>
+      <div class="pillar">
+        <div class="pillar-head"><span class="tag">A</span><h3>Unstructured data + ontology</h3></div>
+        <p class="pillar-why"><b>Put a number, its definition and its evidence in one answer, so cross-department KPI mismatches and "why is this number like this" questions to people disappear.</b> An ontology over the structured KPIs makes every answer pass through one definition; RAG over unstructured documents makes information that lived only in definition sheets and minutes answerable outside the dashboard. Strategic KPIs that were managed only in documents become queryable.</p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>feature</th><th>what it does</th><th>impact</th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="3">Ontology — the dictionary for structured data</td></tr>
+            <tr><td class="name">Single KPI dictionary</td><td>Terms, synonyms and KPI definitions in one dictionary that every answer passes through</td><td class="impact">Cross-department number mismatches disappear structurally</td></tr>
+            <tr><td class="name">Definition + value together</td><td>"Why is this KPI defined this way, and what is it now" in one answer</td><td class="impact">One question instead of two</td></tr>
+            <tr class="grp"><td colspan="3">RAG agent + Knowledge Brain — reads unstructured documents</td></tr>
+            <tr><td class="name">Document-grounded answers</td><td>Reads definition sheets, plans and minutes; answers with the source location</td><td class="impact">Nobody has to ask a person for a KPI definition</td></tr>
+            <tr><td class="name">Automatic document ingestion</td><td>Indexes shared folders and groupware on a schedule</td><td class="impact">Knowledge stays current without manual work</td></tr>
+            <tr><td class="name">Relationship questions (Graph RAG)</td><td>Finds "what connects to what" — KPI influence, organisational responsibility — as a graph</td><td class="impact">Influence relations answered with document evidence</td></tr>
+            <tr class="grp"><td colspan="3">Strategic-KPI knowledge — linking documents to numbers</td></tr>
+            <tr><td class="name">Instant strategic-KPI answers</td><td>Links management-KPI documents to the structured KPIs</td><td class="impact">Answered outside the dashboard</td></tr>
+            <tr><td class="name">"Why" attached to reports</td><td>Attaches interpretation evidence next to the numbers in the monthly report</td><td class="impact">Recipients stop asking back</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="pillar">
+        <div class="pillar-head"><span class="tag">B</span><h3>Personalised agent</h3></div>
+        <p class="pillar-why"><b>Remember the user and learn from feedback, so answers fit the person's role and format without re-entering conditions each time.</b> Accuracy improves with use, adoption rises, and the tool earns trust. Business context stays in the system when an owner changes.</p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>feature</th><th>what it does</th><th>impact</th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="3">Memory — remembers the user</td></tr>
+            <tr><td class="name">Dialogue history</td><td>Continues each user's context across turns</td><td class="impact">No re-entry of conditions</td></tr>
+            <tr><td class="name">Role default scope</td><td>Business unit, channel and KPIs applied automatically</td><td class="impact">Fewer mis-queries</td></tr>
+            <tr><td class="name">Task context</td><td>Narrows the intent of a question from personal history</td><td class="impact">Fewer clarifying questions</td></tr>
+            <tr class="grp"><td colspan="3">Learning loop — fits better with use</td></tr>
+            <tr><td class="name">Feedback applied</td><td>Answer ratings feed the next answer</td><td class="impact">Accuracy improves with use</td></tr>
+            <tr><td class="name">Preferred formats</td><td>Remembers frequently used table, chart and report templates</td><td class="impact">Less post-processing</td></tr>
+            <tr><td class="name">Personal morning brief</td><td>Sends the owner's scope status before being asked</td><td class="impact">No dashboard-checking time</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="pillar">
+        <div class="pillar-head"><span class="tag">C</span><h3>Multi-agent hierarchy orchestration</h3></div>
+        <p class="pillar-why"><b>A scalable orchestration structure with modular functions, so new or changed business processes can be absorbed.</b> Add a team lead to add a domain; add a module to add an automated task. Multi-step requests do not break, and results are verified before they reach the user.</p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>layer · component</th><th>what it does</th><th>impact</th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="3">Strategy layer · top · Master Agent — turns questions into goals and owns the final answer</td></tr>
+            <tr><td class="name">Intent → goal decomposition</td><td>Breaks "July report" into P&amp;L → sales → SCM steps</td><td class="impact">Compound requests finish in one sentence</td></tr>
+            <tr><td class="name">Synthesis · final verification</td><td>Merges sub-results, checks them against Metric View values, rolls back if wrong</td><td class="impact">Wrong numbers never reach the user</td></tr>
+            <tr><td class="name">Long procedures continue</td><td>Saves intermediate state so multi-step jobs resume where they stopped</td><td class="impact">"Please do it again" disappears</td></tr>
+            <tr><td class="name">Answer provenance</td><td>Records which data, documents and rules produced the answer</td><td class="impact">Audit response and error tracing possible</td></tr>
+            <tr class="grp"><td colspan="3">Planning layer · mid · three team-lead agents — decide how to solve the goal with their own tools; one more team lead = one more domain</td></tr>
+            <tr><td class="name">Structured-analysis agent</td><td>Interprets the question through the ontology into KPI, period and axis; decides which Genies to call in parallel; fixes and re-runs wrong SQL</td><td class="impact">Three domains in one query; wrong SQL never becomes an answer</td></tr>
+            <tr><td class="name">Knowledge agent</td><td>Directs the RAG agent, curates sources, decides when Graph RAG is needed; links strategic-KPI definitions to structured values</td><td class="impact">Answers with "why" and with sources</td></tr>
+            <tr><td class="name">Task-automation agent</td><td>Picks specialised and common modules, orders them, assembles the result — a report completes P&amp;L → sales → SCM</td><td class="impact">Repetitive work finishes in one sentence</td></tr>
+            <tr><td class="name">Shared rules</td><td>Retry by another route on failure or delay; ask back when ambiguous; never touch data outside the user's permissions</td><td class="impact">Long jobs do not break; out-of-scope numbers never mix in</td></tr>
+            <tr class="grp"><td colspan="3">Execution layer · bottom · executors — do the actual queries, searches, calculations and writing</td></tr>
+            <tr><td class="name">Genie Space ×4 (unchanged)</td><td>SCM · daily results · P&amp;L · mixed-sales promo — natural language → SQL</td><td class="impact">Existing assets reused without change</td></tr>
+            <tr><td class="name">Metric View check</td><td>Reconciles query results with semantic-layer reference values</td><td class="impact">Wrong numbers never reach the user</td></tr>
+            <tr><td class="name">RAG agent</td><td>Turns the question into a search query, finds evidence in the Knowledge Brain, drafts with source location</td><td class="impact">Executes pillar A</td></tr>
+            <tr><td class="name">Knowledge Brain</td><td>Document store with a Vector Search index and, when needed, a graph index</td><td class="impact">Evidence in one place</td></tr>
+            <tr><td class="name">Document ingestion</td><td>Periodic indexing of shared folders and groupware</td><td class="impact">Current without manual work</td></tr>
+            <tr><td class="name">Interview → automation module</td><td>Finds each owner's repetitive tasks by interview, prioritises them, moves them into modules</td><td class="impact">What users want automated keeps getting automated</td></tr>
+            <tr><td class="name">Report writing</td><td>Fixed-format monthly and weekly reports</td><td class="impact">Days after close → same day</td></tr>
+            <tr><td class="name">Calculation · charts</td><td>Year-on-year, ratios, tables and charts computed in code</td><td class="impact">Calculation errors removed</td></tr>
+            <tr><td class="name">Notifications</td><td>Sends results to owners by messenger or mail</td><td class="impact">Nobody goes to check</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="rule"><b>Foundation</b><span><strong>Accuracy and permissions.</strong> Every time a source table or model changes, the golden set is re-scored automatically to catch quality regressions before release. Every query inherits the user's own data permissions. The accuracy-evaluation framework that starts in Q4 2026 is the safety net for all 2027 features.</span></div>
     </section>
   </main>
   </div>
